@@ -264,7 +264,7 @@ app.post("/logIn", async(req, res) => {
 
 })
 
-app.get("/doctors",async(req,res)=>{
+app.get("/",async(req,res)=>{
     try {
         const totalDoctors = await doctorSchema.countDocuments();
         const limit = totalDoctors < 20 ? totalDoctors : 20;
