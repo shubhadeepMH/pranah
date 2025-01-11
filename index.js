@@ -25,8 +25,8 @@ app.post('/doctor_signUp', async (req, res) => {
         let doctor = await doctorSchema.findOne({ $or: [{ email }, { mobile }] });
         let user = await userSchema.findOne({ email });
         let clinic = await clinicSchema.findOne({ email });
-        if (doctor) {
-            if (doctor.email === email) {
+        if (doctor||user||clinic) {
+            if (doctor.email||user.email||clinic.email === email) {
                 return res.status(400).json({ error: 'Email already exists' });
             } else if (doctor.mobile === mobile) {
                 return res.status(400).json({ error: 'Mobile number already exists' });
