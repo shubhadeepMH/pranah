@@ -23,6 +23,8 @@ app.post('/doctor_signUp', async (req, res) => {
     try {
         const { name, mobile, email, password } = req.body;
         let doctor = await doctorSchema.findOne({ $or: [{ email }, { mobile }] });
+        let user = await userSchema.findOne({ email });
+        let clinic = await clinicSchema.findOne({ email });
         if (doctor) {
             if (doctor.email === email) {
                 return res.status(400).json({ error: 'Email already exists' });
@@ -96,7 +98,10 @@ app.post('/user_signUp', async (req, res) => {
     try {
         const { name, email, password } = req.body;
         let user = await userSchema.findOne({ email });
-        if (user) {
+        let doctor = await doctorSchema.findOne({ email });
+        let clinic = await clinicSchema.findOne({ email });
+       
+        if (user||doctor||clinic) {
             return res.status(400).json({ error: 'Email already exists' });
         }
         user = new userSchema({ name, email, password });
@@ -113,8 +118,10 @@ app.post('/clinic_signUp', async (req, res) => {
 
     try {
         const { name, email, password } = req.body;
+        let user = await userSchema.findOne({ email });
+        let doctor = await doctorSchema.findOne({ email });
         let clinic = await clinicSchema.findOne({ email });
-        if (clinic) {
+        if (clinic||doctor||user) {
             return res.status(400).json({ error: 'Email already exists' });
         }
         clinic = new clinicSchema({ name, email, password });
