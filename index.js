@@ -37,7 +37,7 @@ app.post('/doctor_signUp', async (req, res) => {
         res.json({ message: 'Doctor signed up successfully', success: true });
     } catch (err) {
        
-        res.status(400).json({ error: 'Error signing up doctor' });
+        res.status(400).json({ error: err });
     }
 });
 
@@ -109,7 +109,7 @@ app.post('/user_signUp', async (req, res) => {
         res.json({ message: 'Signed up successfully', success: true });
     } catch (err) {
     
-        res.status(400).json({ error: 'Error signing up user' });
+        res.status(400).json({ error: err });
     }
 });
 
@@ -129,7 +129,7 @@ app.post('/clinic_signUp', async (req, res) => {
         res.json({ message: 'Clinic signed up successfully', success: true });
     } catch (err) {
     
-        res.status(400).json({ error: 'Error signing up clinic' });
+        res.status(400).json({ error: err });
     }
 });
 
