@@ -22,23 +22,38 @@ app.post('/doctor_signUp', async (req, res) => {
 
     try {
         const { name, mobile, email, password } = req.body;
-        let doctor = await doctorSchema.findOne({ $or: [{ email }, { mobile }] });
-        let user = await userSchema.findOne({ email });
-        let clinic = await clinicSchema.findOne({ email });
-        if (doctor||user||clinic) {
-            if (doctor.email||user.email||clinic.email === email) {
-                return res.status(400).json({ error: 'Email already exists' });
-            } else if (doctor.mobile === mobile) {
-                return res.status(400).json({ error: 'Mobile number already exists' });
-            }
+    
+        // Check if email already exists in any schema
+        const emailExists =
+            await doctorSchema.findOne({ email }) ||
+            await userSchema.findOne({ email }) ||
+            await clinicSchema.findOne({ email });
+    
+        // Check if mobile already exists in any schema
+        const mobileExists =
+            await doctorSchema.findOne({ mobile }) ||
+            await userSchema.findOne({ mobile }) ||
+            await clinicSchema.findOne({ mobile });
+    
+        // Handle duplicate email or mobile
+        if (emailExists) {
+            return res.status(400).json({ error: 'Email already exists' });
         }
-        doctor = new doctorSchema({ name, mobile, email, password });
+    
+        if (mobileExists) {
+            return res.status(400).json({ error: 'Mobile number already exists' });
+        }
+    
+        // Create new doctor
+        const doctor = new doctorSchema({ name, mobile, email, password });
         await doctor.save();
+    
         res.json({ message: 'Doctor signed up successfully', success: true });
     } catch (err) {
-       
-        res.status(400).json({ error: err });
+        console.error(err); // Log the error for debugging purposes
+        res.status(500).json({ error: 'An unexpected error occurred. Please try again later.' });
     }
+    
 });
 
 // Update Doctor Profile
