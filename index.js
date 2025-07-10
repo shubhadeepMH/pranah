@@ -7,7 +7,7 @@ const clinicSchema = require('./Database/Models/Clinics.js')
 const userSchema = require('./Database/Models/Users.js')
 
 
-let PORT = 5000 || process.env.PORT
+let PORT = 5007 || process.env.PORT
 
 
 // Middlewears
@@ -22,38 +22,38 @@ app.post('/doctor_signUp', async (req, res) => {
 
     try {
         const { name, mobile, email, password } = req.body;
-    
+
         // Check if email already exists in any schema
         const emailExists =
             await doctorSchema.findOne({ email }) ||
             await userSchema.findOne({ email }) ||
             await clinicSchema.findOne({ email });
-    
+
         // Check if mobile already exists in any schema
         const mobileExists =
             await doctorSchema.findOne({ mobile }) ||
             await userSchema.findOne({ mobile }) ||
             await clinicSchema.findOne({ mobile });
-    
+
         // Handle duplicate email or mobile
         if (emailExists) {
             return res.status(400).json({ error: 'Email already exists' });
         }
-    
+
         if (mobileExists) {
             return res.status(400).json({ error: 'Mobile number already exists' });
         }
-    
+
         // Create new doctor
         const doctor = new doctorSchema({ name, mobile, email, password });
         await doctor.save();
-    
+
         res.json({ message: 'Doctor signed up successfully', success: true });
     } catch (err) {
         console.error(err); // Log the error for debugging purposes
         res.status(500).json({ error: 'An unexpected error occurred. Please try again later.' });
     }
-    
+
 });
 
 // Update Doctor Profile
@@ -101,7 +101,7 @@ app.put('/doctor_profile_update', async (req, res) => {
 
         res.json({ message: 'Profile updated successfully', doctor });
     } catch (err) {
- 
+
         res.status(500).json({ error: 'Internal Server Error' });
     }
 
@@ -115,15 +115,15 @@ app.post('/user_signUp', async (req, res) => {
         let user = await userSchema.findOne({ email });
         let doctor = await doctorSchema.findOne({ email });
         let clinic = await clinicSchema.findOne({ email });
-       
-        if (user||doctor||clinic) {
+
+        if (user || doctor || clinic) {
             return res.status(400).json({ error: 'Email already exists' });
         }
         user = new userSchema({ name, email, password });
         await user.save();
         res.json({ message: 'Signed up successfully', success: true });
     } catch (err) {
-    
+
         res.status(400).json({ error: err });
     }
 });
@@ -136,14 +136,14 @@ app.post('/clinic_signUp', async (req, res) => {
         let user = await userSchema.findOne({ email });
         let doctor = await doctorSchema.findOne({ email });
         let clinic = await clinicSchema.findOne({ email });
-        if (clinic||doctor||user) {
+        if (clinic || doctor || user) {
             return res.status(400).json({ error: 'Email already exists' });
         }
         clinic = new clinicSchema({ name, email, password });
         await clinic.save();
         res.json({ message: 'Clinic signed up successfully', success: true });
     } catch (err) {
-    
+
         res.status(400).json({ error: err });
     }
 });
@@ -184,7 +184,7 @@ app.put('/clinic_update_profile', async (req, res) => {
 
         res.json({ message: 'Profile updated successfully', clinic });
     } catch (err) {
-    
+
         res.status(500).json({ error: 'Internal Server Error' });
     }
 
@@ -254,7 +254,7 @@ app.post('/add_doctor', async (req, res) => {
 
 
     } catch (err) {
-    
+
         res.status(500).json({ error: 'Internal Server Error' });
     }
 
@@ -262,7 +262,7 @@ app.post('/add_doctor', async (req, res) => {
 })
 
 // Log in API
-app.post("/logIn", async(req, res) => {
+app.post("/logIn", async (req, res) => {
     try {
         const { email, password } = req.body;
         let doctor = await doctorSchema.findOne({ email });
@@ -279,35 +279,95 @@ app.post("/logIn", async(req, res) => {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
     } catch (err) {
-    
+
         res.status(500).json({ error: 'Error logging in' });
     }
 
 
 })
-
-app.get("/",async(req,res)=>{
+//Get All doctors API
+app.get("/", async (req, res) => {
     try {
         const totalDoctors = await doctorSchema.countDocuments();
         const limit = totalDoctors < 20 ? totalDoctors : 20;
         const doctors = await doctorSchema.aggregate([{ $sample: { size: limit } }]);
         res.json({ message: `Fetched ${doctors.length} random doctors`, data: doctors });
     } catch (err) {
-    
+
         res.status(500).json({ error: 'Error fetching random doctors' });
     }
 })
 
-app.get("/clinics",async(req,res)=>{
+//Get All clinics API
+app.get("/clinics", async (req, res) => {
     try {
         const totalClinics = await clinicSchema.countDocuments();
         const limit = totalClinics < 20 ? totalClinics : 20;
         const clinics = await clinicSchema.aggregate([{ $sample: { size: limit } }]);
         res.json({ message: `Fetched ${clinics.length} random clinics`, data: clinics });
     } catch (err) {
-    
+
         res.status(500).json({ error: 'Error fetching random clinics' });
     }
+})
+
+//Get Doctor(Indiviadual) API
+
+app.post("/find_doctor", async (req, res) => {
+
+    try {
+        let email = req.body.email
+        let doctorDetails = await doctorSchema.findOne({ email });
+
+        if(!doctorDetails){
+            res.send({message:"Doctor not found",success:false})
+        }else{
+            res.json({ doctor: doctorDetails ,success:true});
+        }
+
+        
+    } catch (error) {
+        res.return({ message: error })
+    }
+
+})
+
+app.post("/find_clinic", async (req, res) => {
+
+    try {
+        let email = req.body.email
+        let clinicDetails = await clinicSchema.findOne({ email });
+
+        if(!clinicDetails){
+            res.send({message:"Clinic not found",success:false})
+        }else{
+            res.json({ clinic: clinicDetails ,success:true});
+        }
+
+        
+    } catch (error) {
+        res.return({ message: error })
+    }
+
+})
+
+app.post("/find_user", async (req, res) => {
+
+    try {
+        let email = req.body.email
+        let userDetails = await userSchema.findOne({ email });
+
+        if(!userDetails){
+            res.send({message:"user not found",success:false})
+        }else{
+            res.json({ user: userDetails ,success:true});
+        }
+
+        
+    } catch (error) {
+        res.return({ message: error })
+    }
+
 })
 
 

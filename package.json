@@ -1,10 +1,11 @@
 {
-  "name": "pranah",
+  "name": "nodemon",
   "version": "1.0.0",
   "description": "Backend for the application",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
+  
   },
   "author": "Shubhadeep Mahato",
   "license": "ISC",
@@ -12,6 +13,18 @@
     "cors": "^2.8.5",
     "express": "^4.21.1",
     "mongoose": "^8.7.1",
-    "nodemon": "^3.1.7"
-  }
+    "nodemon": "^3.1.10"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shubhadeepMH/pranah.git"
+  },
+  "keywords": [
+    "Hello"
+  ],
+  "bugs": {
+    "url": "https://github.com/shubhadeepMH/pranah/issues"
+  },
+  "homepage": "https://github.com/shubhadeepMH/pranah#readme"
 }
