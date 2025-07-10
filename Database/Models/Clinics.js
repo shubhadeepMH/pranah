@@ -8,6 +8,7 @@ const clinicSchema = new mongoose.Schema({
     password: { type: String, trim: true, required: true, min: 6, max: 64 },
     address: { type: String, default: "Unknown" },
     image: { type: String, trim: true, default: "" },
+    userType: { type: String, default: "Clinic" },
     rating: [],
     raters:[],
     comments:[],
