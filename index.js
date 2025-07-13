@@ -322,7 +322,7 @@ app.post("/find_doctor", async (req, res) => {
         if(!doctorDetails){
             res.send({message:"Doctor not found",success:false})
         }else{
-            res.json({ doctor: doctorDetails ,success:true});
+            res.json({ user: doctorDetails ,success:true});
         }
 
         
@@ -341,7 +341,7 @@ app.post("/find_clinic", async (req, res) => {
         if(!clinicDetails){
             res.send({message:"Clinic not found",success:false})
         }else{
-            res.json({ clinic: clinicDetails ,success:true});
+            res.json({ user: clinicDetails ,success:true});
         }
 
         
