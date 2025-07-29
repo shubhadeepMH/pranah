@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const doctorSchema = require('./Database/Models/Doctors.js')
 const clinicSchema = require('./Database/Models/Clinics.js')
 const userSchema = require('./Database/Models/Users.js')
+const addressesSchema= require('./Database/Models/doctorAddresses.js')
 
 
 let PORT = 5007 || process.env.PORT
@@ -368,6 +369,30 @@ app.post("/find_user", async (req, res) => {
         res.return({ message: error })
     }
 
+})
+app.post("/add_address",async(req,res)=>{
+    try {
+
+        const newAddresses = req.body.addresses;
+        console.log(newAddresses);
+        
+
+        if (!Array.isArray(newAddresses) || newAddresses.length === 0) {
+          return res.status(400).json({ message: "No addresses provided." });
+        }
+    
+        // Insert all addresses into the collection
+        const result = await addressesSchema.insertMany(newAddresses);
+    
+        res.status(201).json({ message: "Addresses added successfully", data: result });
+
+        
+    
+    } catch (error) {
+        console.log(error);
+        
+    }
+   
 })
 
 
