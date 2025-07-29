@@ -374,12 +374,7 @@ app.post("/add_address",async(req,res)=>{
     try {
 
         const newAddresses = req.body.addresses;
-        console.log(newAddresses);
         
-
-        if (!Array.isArray(newAddresses) || newAddresses.length === 0) {
-          return res.status(400).json({ message: "No addresses provided." });
-        }
     
         // Insert all addresses into the collection
         const result = await addressesSchema.insertMany(newAddresses);
