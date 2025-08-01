@@ -8,21 +8,6 @@ const doctorSchema = new mongoose.Schema({
   password: { type: String, trim: true, min: 6, max: 64 },
   userType: { type: String, default: "Doctor" },
   price:{type:Number,default:0},
-  addresses: [
-    {
-      address: { type: String, trim: true },
-      city: { type: String, trim: true },
-      state: { type: String, trim: true },
-      pincode: { type: Number },
-      availability: [
-        {
-          day: { type: String, enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] },
-          startTime: { type: String },
-          endTime: { type: String },
-        },
-      ],
-    },
-  ],
   comments: [],
   description: { type: String },
   experience: { type: Number, default: 0 },
