@@ -67,6 +67,7 @@ app.put('/doctor_profile_update', async (req, res) => {
         const doctorId = req.body.id;
         const {
             name,
+            email,
             title,
             mobile,
             description,
