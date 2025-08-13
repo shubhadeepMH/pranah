@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const doctorSchema = require('./Database/Models/Doctors.js')
 const clinicSchema = require('./Database/Models/Clinics.js')
 const userSchema = require('./Database/Models/Users.js')
-const addressesSchema= require('./Database/Models/doctorAddresses.js')
+const addressesSchema = require('./Database/Models/doctorAddresses.js')
 
 
 let PORT = 5007 || process.env.PORT
@@ -317,13 +317,13 @@ app.post("/find_doctor", async (req, res) => {
         let email = req.body.email
         let doctorDetails = await doctorSchema.findOne({ email });
 
-        if(!doctorDetails){
-            res.send({message:"Doctor not found",success:false})
-        }else{
-            res.json({ user: doctorDetails ,success:true});
+        if (!doctorDetails) {
+            res.send({ message: "Doctor not found", success: false })
+        } else {
+            res.json({ user: doctorDetails, success: true });
         }
 
-        
+
     } catch (error) {
         res.return({ message: error })
     }
@@ -336,13 +336,13 @@ app.post("/find_clinic", async (req, res) => {
         let email = req.body.email
         let clinicDetails = await clinicSchema.findOne({ email });
 
-        if(!clinicDetails){
-            res.send({message:"Clinic not found",success:false})
-        }else{
-            res.json({ user: clinicDetails ,success:true});
+        if (!clinicDetails) {
+            res.send({ message: "Clinic not found", success: false })
+        } else {
+            res.json({ user: clinicDetails, success: true });
         }
 
-        
+
     } catch (error) {
         res.return({ message: error })
     }
@@ -355,37 +355,78 @@ app.post("/find_user", async (req, res) => {
         let email = req.body.email
         let userDetails = await userSchema.findOne({ email });
 
-        if(!userDetails){
-            res.send({message:"user not found",success:false})
-        }else{
-            res.json({ user: userDetails ,success:true});
+        if (!userDetails) {
+            res.send({ message: "user not found", success: false })
+        } else {
+            res.json({ user: userDetails, success: true });
         }
 
-        
+
     } catch (error) {
         res.return({ message: error })
     }
 
 })
-app.post("/add_address",async(req,res)=>{
+app.post("/add_address", async (req, res) => {
     try {
 
         const newAddresses = req.body.addresses;
-        
-    
+
+
         // Insert all addresses into the collection
         const result = await addressesSchema.insertMany(newAddresses);
-    
+
         res.status(201).json({ message: "Addresses added successfully", data: result });
 
-        
-    
+
+
     } catch (error) {
-        console.log(error);
-        
+       res.json({error:error})
+
     }
-   
+
 })
+
+app.get('/addresses/:email', async (req, res) => {
+    try {
+        const { email } = req.params;
+
+        const addresses = await addressesSchema.find(
+            { doctorEmail: email },
+
+        );
+
+        if (!addresses || addresses.length === 0) {
+            return res.status(404).json({ error: "No Addresses found with that email" });
+        }
+
+
+        res.status(200).json({ addresses });
+    } catch (error) {
+       
+        res.status(500).json({ error: "Server error" });
+    }
+})
+
+app.delete('/delete_address/:addressId', async (req, res) => {
+    try {
+        const { addressId } = req.params;
+            
+
+        const deletedAddress = await addressesSchema.findByIdAndDelete(addressId);
+
+        if (!deletedAddress) {
+            return res.status(404).json({ error: "Address not found" });
+        }
+
+        res.status(200).json({ message: "Address deleted successfully",success:true });
+    } catch (error) {
+        console.error("Error deleting address:", error);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+
 
 
 
