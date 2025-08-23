@@ -6,6 +6,7 @@ const doctorSchema = require('./Database/Models/Doctors.js')
 const clinicSchema = require('./Database/Models/Clinics.js')
 const userSchema = require('./Database/Models/Users.js')
 const addressesSchema = require('./Database/Models/doctorAddresses.js')
+const clinicDoctorSchema =require('./Database/Models/ClinicDoctors.js') 
 
 
 let PORT = 5007 || process.env.PORT
@@ -153,26 +154,26 @@ app.put('/clinic_update_profile', async (req, res) => {
         const {
             name,
             title,
-            email,
             mobile,
             password,
             address,
             description,
             image,
             showContact,
+           
         } = req.body;
 
         const clinic = await clinicSchema.findByIdAndUpdate(clinicId, {
             $set: {
                 name,
                 title,
-                email,
                 mobile,
                 password,
                 address,
                 description,
                 image,
                 showContact,
+                
             },
         }, { new: true });
 
@@ -425,6 +426,22 @@ app.delete('/delete_address/:addressId', async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 });
+
+app.post('/add_clinicDoctor',async(req,res)=>{
+    let {name,education,specialization}=req.body;
+
+    try {
+       
+        const doctor = new clinicDoctorSchema({ name, education,specialization});
+        await doctor.save();
+        res.send({doctor:doctor,message:"Success"})
+        
+    } catch (error) {
+        res.send(error)
+    }
+
+
+})
 
 
 

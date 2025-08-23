@@ -12,22 +12,6 @@ const clinicSchema = new mongoose.Schema({
     rating: [],
     raters:[],
     comments:[],
-    doctors: [
-      {
-        doctorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctors' },
-        name: { type: String, trim: true },
-        specialization: { type: String, trim: true },
-        education: { type: String, trim: true },
-        experience: { type: Number },
-        availability: [
-          {
-            day: { type: String, enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] },
-            startTime: { type: Date },
-            endTime: { type: Date },
-          },
-        ],
-      },
-    ],
     resetCode: String,
   }, { timestamps: true });
   
