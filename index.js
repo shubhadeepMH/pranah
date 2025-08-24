@@ -155,7 +155,6 @@ app.put('/clinic_update_profile', async (req, res) => {
             name,
             title,
             mobile,
-            password,
             address,
             description,
             image,
@@ -168,7 +167,6 @@ app.put('/clinic_update_profile', async (req, res) => {
                 name,
                 title,
                 mobile,
-                password,
                 address,
                 description,
                 image,
@@ -428,13 +426,13 @@ app.delete('/delete_address/:addressId', async (req, res) => {
 });
 
 app.post('/add_clinicDoctor',async(req,res)=>{
-    let {name,education,specialization}=req.body;
+    let doctors=req.body.doctors;
 
     try {
        
-        const doctor = new clinicDoctorSchema({ name, education,specialization});
-        await doctor.save();
-        res.send({doctor:doctor,message:"Success"})
+          // Insert all doctors into the collection
+          const result = await clinicDoctorSchema.insertMany(doctors);
+          res.status(201).json({ message: "doctors  successfully added", data: result });
         
     } catch (error) {
         res.send(error)
