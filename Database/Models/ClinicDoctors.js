@@ -1,13 +1,10 @@
 const mongoose = require('mongoose');
 
 const clinicDoctorSchema=new mongoose.Schema({
-
+    clinicEmail:{type:String},
     name:{type:String},
     education:{type:String},
-    specialization:{type:String},
-    
-
-
+    specialization:{type:String},    
 
 },{ timestamps: true })
 

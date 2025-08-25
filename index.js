@@ -432,7 +432,7 @@ app.post('/add_clinicDoctor',async(req,res)=>{
        
           // Insert all doctors into the collection
           const result = await clinicDoctorSchema.insertMany(doctors);
-          res.status(201).json({ message: "doctors  successfully added", data: result });
+          res.status(201).json({ message: "Doctors  successfully added", data: result });
         
     } catch (error) {
         res.send(error)
