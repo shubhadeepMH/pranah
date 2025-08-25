@@ -440,6 +440,47 @@ app.post('/add_clinicDoctor',async(req,res)=>{
 
 
 })
+app.get('/get_clinicDoctors/:email',async(req,res)=>{
+  
+    const { email } = req.params;
+    try {
+       
+          // Insert all doctors into the collection
+          const doctors = await clinicDoctorSchema.find(
+            { clinicEmail: email },
+        );
+
+        if (!doctors || doctors.length === 0) {
+            return res.status(404).json({ error: "No doctor found with that email" });
+        }
+
+        res.status(200).json({ doctors });
+        
+    } catch (error) {
+        res.send(error)
+    }
+
+
+})
+
+app.delete('/delete_clinicDoctor/:doctorId', async (req, res) => {
+    try {
+        const { doctorId } = req.params;
+            
+
+        const deletedDoctor= await clinicDoctorSchema.findByIdAndDelete(doctorId);
+
+        if (!deletedDoctor) {
+            return res.status(404).json({ error: "Doctor not found" });
+        }
+
+        res.status(200).json({ message: "Doctor deleted successfully",success:true });
+    } catch (error) {
+        console.error("Error deleting address:", error);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
 
 
 
