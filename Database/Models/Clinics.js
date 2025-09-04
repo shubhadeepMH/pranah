@@ -9,6 +9,8 @@ const clinicSchema = new mongoose.Schema({
     address: { type: String, default: "Unknown" },
     image: { type: String, trim: true, default: "" },
     userType: { type: String, default: "Clinic" },
+    addedBy: { type: String, trim: true, default: 'own' },
+    description: {type: String},
     rating: [],
     raters:[],
     comments:[],

@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema({
     address: { type: String, default:"Unknown" },
     image: { type: String, trim: true, url: String, default:"" },
     userType: { type: String, default: "User" },
+    isAdmin: { type: Boolean, default: false },
     doctors: [
         {
           doctorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctors' },
