@@ -9,7 +9,8 @@ const clinicSchema = new mongoose.Schema({
     address: { type: String, default: "Unknown" },
     image: { type: String, trim: true, default: "" },
     userType: { type: String, default: "Clinic" },
-    addedBy: { type: String, trim: true, default: 'own' },
+    addedBy: { type: String, trim: true, default: 'own' }, //There will be only three options Own, Admin, User
+    ownerEmail: { type: String}, // If Clinic Added by any user or Admin its necesssary to track 
     description: {type: String},
     rating: [],
     raters:[],

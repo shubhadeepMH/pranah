@@ -17,7 +17,8 @@ const doctorSchema = new mongoose.Schema({
   raters: [],
   image: { type: String, trim: true, default: "" },
   showContact: { type: Boolean, default: false },
-  addedBy: { type: String, trim: true, default: 'own' },
+  addedBy: { type: String, trim: true, default: 'own' }, //There will be only three options Own, Admin, User
+  ownerEmail: { type: String}, // If Doctor Address Added by any user or Admin its necesssary to track 
   addedType: { type: String, trim: true, default: 'own' },
   resetCode: String,
 }, { timestamps: true });

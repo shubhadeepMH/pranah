@@ -7,6 +7,8 @@ city:{type:String},
 state:{type:String},
 pinCode:{type:Number},
 availability:{type:Array},
+addedBy:{type:String}, 
+ownerEmail:{type:String}, // If Doctor Address Added by any user or Admin its necesssary to track 
 
 })
 
