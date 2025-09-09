@@ -6,7 +6,7 @@ const doctorSchema = require('./Database/Models/Doctors.js')
 const clinicSchema = require('./Database/Models/Clinics.js')
 const userSchema = require('./Database/Models/Users.js')
 const addressesSchema = require('./Database/Models/doctorAddresses.js')
-const clinicDoctorSchema =require('./Database/Models/ClinicDoctors.js') 
+const clinicDoctorSchema = require('./Database/Models/ClinicDoctors.js')
 
 
 let PORT = 5007 || process.env.PORT
@@ -159,7 +159,7 @@ app.put('/clinic_update_profile', async (req, res) => {
             description,
             image,
             showContact,
-           
+
         } = req.body;
 
         const clinic = await clinicSchema.findByIdAndUpdate(clinicId, {
@@ -171,7 +171,7 @@ app.put('/clinic_update_profile', async (req, res) => {
                 description,
                 image,
                 showContact,
-                
+
             },
         }, { new: true });
 
@@ -191,69 +191,36 @@ app.put('/clinic_update_profile', async (req, res) => {
 // Add doctor Api
 app.post('/add_doctor', async (req, res) => {
 
+
+
+    const { name, mobile, specialization, education, experience, description, ownerEmail ,addedBy} = req.body;
+
     try {
-        const clinicId = req.body.id;
-        const { name, specialization, education, experience } = req.body;
+        const doctor = await doctorSchema.create({
+            name,
+            mobile,
+            specialization,
+            education,
+            experience,
+            description,
+            addedBy,
+            ownerEmail,
+        });
 
-        const clinic = await clinicSchema.findById(clinicId);
-        if (!clinic) {
-            // If clinic not found that means this doctor added by any user.
-            const userId = req.body.id;
-
-
-            const user = await userSchema.findById(userId);
-            const doctor = await doctorSchema.create({
-                name,
-                specialization,
-                education,
-                experience,
-                addedBy: user.name,
-                addedType: "Customer/User",
-            });
-
-            user.doctors.push({
-                doctorId: doctor._id,
-                name,
-                specialization,
-                education,
-                experience,
-                addedBy: user.name,
-                addedType: "Customer/User",
-            });
-
-            await user.save();
-
-            res.json({ message: 'Doctor added successfully' });
-        } else {
-            const doctor = await doctorSchema.create({
-                name,
-                specialization,
-                education,
-                experience,
-                addedBy: clinic.name,
-                addedType: "Clinic/Hospital",
-            });
-
-            clinic.doctors.push({
-                doctorId: doctor._id,
-                name,
-                specialization,
-                education,
-                experience,
-                addedBy: clinic.name,
-                addedType: "Clinic/Hospital",
-            });
-
-            await clinic.save();
-
-            res.json({ message: 'Doctor added successfully' });
-        }
+        res.status(201).json({ message: "Doctor Added Successfully", doctor });
 
 
-    } catch (err) {
-
+    } catch (error) {
         res.status(500).json({ error: 'Internal Server Error' });
+        console.log(error)
     }
+
+
+
+
+
+
+
 
 
 })
@@ -380,7 +347,7 @@ app.post("/add_address", async (req, res) => {
 
 
     } catch (error) {
-       res.json({error:error})
+        res.json({ error: error })
 
     }
 
@@ -402,7 +369,7 @@ app.get('/addresses/:email', async (req, res) => {
 
         res.status(200).json({ addresses });
     } catch (error) {
-       
+
         res.status(500).json({ error: "Server error" });
     }
 })
@@ -410,7 +377,7 @@ app.get('/addresses/:email', async (req, res) => {
 app.delete('/delete_address/:addressId', async (req, res) => {
     try {
         const { addressId } = req.params;
-            
+
 
         const deletedAddress = await addressesSchema.findByIdAndDelete(addressId);
 
@@ -418,35 +385,35 @@ app.delete('/delete_address/:addressId', async (req, res) => {
             return res.status(404).json({ error: "Address not found" });
         }
 
-        res.status(200).json({ message: "Address deleted successfully",success:true });
+        res.status(200).json({ message: "Address deleted successfully", success: true });
     } catch (error) {
         console.error("Error deleting address:", error);
         res.status(500).json({ error: "Server error" });
     }
 });
 
-app.post('/add_clinicDoctor',async(req,res)=>{
-    let doctors=req.body.doctors;
+app.post('/add_clinicDoctor', async (req, res) => {
+    let doctors = req.body.doctors;
 
     try {
-       
-          // Insert all doctors into the collection
-          const result = await clinicDoctorSchema.insertMany(doctors);
-          res.status(201).json({ message: "Doctors  successfully added", data: result });
-        
+
+        // Insert all doctors into the collection
+        const result = await clinicDoctorSchema.insertMany(doctors);
+        res.status(201).json({ message: "Doctors  successfully added", data: result });
+
     } catch (error) {
         res.send(error)
     }
 
 
 })
-app.get('/get_clinicDoctors/:email',async(req,res)=>{
-  
+app.get('/get_clinicDoctors/:email', async (req, res) => {
+
     const { email } = req.params;
     try {
-       
-          // Insert all doctors into the collection
-          const doctors = await clinicDoctorSchema.find(
+
+        // Insert all doctors into the collection
+        const doctors = await clinicDoctorSchema.find(
             { clinicEmail: email },
         );
 
@@ -455,7 +422,7 @@ app.get('/get_clinicDoctors/:email',async(req,res)=>{
         }
 
         res.status(200).json({ doctors });
-        
+
     } catch (error) {
         res.send(error)
     }
@@ -466,15 +433,15 @@ app.get('/get_clinicDoctors/:email',async(req,res)=>{
 app.delete('/delete_clinicDoctor/:doctorId', async (req, res) => {
     try {
         const { doctorId } = req.params;
-            
 
-        const deletedDoctor= await clinicDoctorSchema.findByIdAndDelete(doctorId);
+
+        const deletedDoctor = await clinicDoctorSchema.findByIdAndDelete(doctorId);
 
         if (!deletedDoctor) {
             return res.status(404).json({ error: "Doctor not found" });
         }
 
-        res.status(200).json({ message: "Doctor deleted successfully",success:true });
+        res.status(200).json({ message: "Doctor deleted successfully", success: true });
     } catch (error) {
         console.error("Error deleting address:", error);
         res.status(500).json({ error: "Server error" });
