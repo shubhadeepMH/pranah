@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const doctorAddressesSchema= new mongoose.Schema({
 doctorEmail:{type:String},
-doctorId:{type:string}, //If Doctor added by user or Admin than its not necessary that Doctor Email exist thats why doctorId needed to track
+doctorId:{type:String}, //If Doctor added by user or Admin than its not necessary that Doctor Email exist thats why doctorId needed to track
 addressLine:{type:String},
 city:{type:String},
 state:{type:String},
