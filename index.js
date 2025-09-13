@@ -188,12 +188,12 @@ app.put('/clinic_update_profile', async (req, res) => {
 });
 
 
-// Add doctor Api
+// Add doctor Api(Adding Doctor through User/Admin)
 app.post('/add_doctor', async (req, res) => {
 
 
 
-    const { name, mobile, specialization, education, experience, description, ownerEmail ,addedBy} = req.body;
+    const { name, mobile, specialization, education, experience, description, ownerEmail, addedBy} = req.body;
 
     try {
         const doctor = await doctorSchema.create({
@@ -205,6 +205,7 @@ app.post('/add_doctor', async (req, res) => {
             description,
             addedBy,
             ownerEmail,
+
         });
 
         res.status(201).json({ message: "Doctor Added Successfully", doctor });
@@ -216,11 +217,22 @@ app.post('/add_doctor', async (req, res) => {
     }
 
 
+})
 
+//Adding Clinic Through User/Admin
+app.post('/add_clinic', async (req, res) => {
 
+    try {
+        const { name, title, address, addedBy, ownerEmail,description } = req.body
 
-
-
+        const clinic = await clinicSchema.create({
+            name, title, address, addedBy, ownerEmail,description
+        })
+        res.status(201).json({ message: "Clinic Added Successfully", clinic });
+    } catch (error) {
+        res.status(500).json({ error: 'Internal Server Error' });
+        console.log(error)
+    }
 
 
 })
