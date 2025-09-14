@@ -155,22 +155,29 @@ app.put('/clinic_update_profile', async (req, res) => {
             name,
             title,
             mobile,
-            address,
+            addressLine,
+            city,
+            state,
+            pinCode,
             description,
             image,
             showContact,
+            
 
         } = req.body;
 
         const clinic = await clinicSchema.findByIdAndUpdate(clinicId, {
             $set: {
-                name,
-                title,
-                mobile,
-                address,
-                description,
-                image,
-                showContact,
+            name,
+            title,
+            mobile,
+            addressLine,
+            city,
+            state,
+            pinCode,
+            description,
+            image,
+            showContact,
 
             },
         }, { new: true });
@@ -223,10 +230,10 @@ app.post('/add_doctor', async (req, res) => {
 app.post('/add_clinic', async (req, res) => {
 
     try {
-        const { name, title, address, addedBy, ownerEmail,description } = req.body
+        const { name, title,email, addressLine,city,state,pinCode, addedBy, ownerEmail,description } = req.body
 
         const clinic = await clinicSchema.create({
-            name, title, address, addedBy, ownerEmail,description
+            name, title,email, addressLine,city,state,pinCode, addedBy, ownerEmail,description 
         })
         res.status(201).json({ message: "Clinic Added Successfully", clinic });
     } catch (error) {

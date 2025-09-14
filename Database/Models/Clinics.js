@@ -6,7 +6,10 @@ const clinicSchema = new mongoose.Schema({
     mobile: { type: String, trim: true,},
     title: { type: String, trim: true, default:"Healthcare Service"},
     password: { type: String, trim: true, min: 6, max: 64 },
-    address: { type: String, default: "Unknown" },
+    addressLine: { type: String, default: "Unknown" },
+    city:{type:String},
+    state:{type:String},
+    pinCode:{type:Number},
     image: { type: String, trim: true, default: "" },
     userType: { type: String, default: "Clinic" },
     addedBy: { type: String, trim: true, default: 'own' }, //There will be only three options Own, Admin, User
