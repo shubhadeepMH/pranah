@@ -162,22 +162,22 @@ app.put('/clinic_update_profile', async (req, res) => {
             description,
             image,
             showContact,
-            
+
 
         } = req.body;
 
         const clinic = await clinicSchema.findByIdAndUpdate(clinicId, {
             $set: {
-            name,
-            title,
-            mobile,
-            addressLine,
-            city,
-            state,
-            pinCode,
-            description,
-            image,
-            showContact,
+                name,
+                title,
+                mobile,
+                addressLine,
+                city,
+                state,
+                pinCode,
+                description,
+                image,
+                showContact,
 
             },
         }, { new: true });
@@ -200,7 +200,7 @@ app.post('/add_doctor', async (req, res) => {
 
 
 
-    const { name, mobile, specialization, education, experience, description, ownerEmail, addedBy} = req.body;
+    const { name, mobile, specialization, education, experience, description, ownerEmail, addedBy } = req.body;
 
     try {
         const doctor = await doctorSchema.create({
@@ -230,10 +230,10 @@ app.post('/add_doctor', async (req, res) => {
 app.post('/add_clinic', async (req, res) => {
 
     try {
-        const { name, title,email, addressLine,city,state,pinCode, addedBy, ownerEmail,description } = req.body
+        const { name, title, email, addressLine, city, state, pinCode, addedBy, ownerEmail, description } = req.body
 
         const clinic = await clinicSchema.create({
-            name, title,email, addressLine,city,state,pinCode, addedBy, ownerEmail,description 
+            name, title, email, addressLine, city, state, pinCode, addedBy, ownerEmail, description
         })
         res.status(201).json({ message: "Clinic Added Successfully", clinic });
     } catch (error) {
@@ -352,6 +352,92 @@ app.post("/find_user", async (req, res) => {
     }
 
 })
+//Get Doctor those are added by user 
+app.get('/user_added_doctors/:email', async (req, res) => {
+    try {
+
+        let { email } = req.params
+        let doctors = await doctorSchema.find({ ownerEmail: email })
+        if (!doctors) {
+            res.json({ message: "No Doctor Found" })
+        } else {
+            res.json({ doctors: doctors })
+        }
+
+    } catch (error) {
+        res.json({ error: error })
+
+    }
+
+
+
+
+})
+
+
+//Get Clinics those are added by user 
+app.get('/user_added_clinics/:email', async (req, res) => {
+
+    try {
+
+        let { email } = req.params
+        let doctors = await clinicSchema.find({ ownerEmail: email })
+        if (!doctors) {
+            res.json({ message: "No Doctor Found" })
+        } else {
+            res.json({ doctors: doctors })
+        }
+
+    } catch (error) {
+        res.json({ error: error })
+
+    }
+
+})
+
+//delete doctors added by user
+
+app.delete("/delete_doctor/:doctorId", async (req, res) => {
+    try {
+        const { doctorId } = req.params;
+
+
+        const deletedDoctor = await doctorSchema.findByIdAndDelete(doctorId);
+
+        if (!deletedDoctor) {
+            return res.status(404).json({ error: "Doctor not found" });
+        }
+
+        res.status(200).json({ message: "Doctor deleted successfully", success: true });
+    } catch (error) {
+        console.error("Error deleting Doctor:", error);
+        res.status(500).json({ error: "Server error" });
+    }
+
+
+})
+
+//delete clinic added by user
+app.delete("/delete_clinic/:clinicId", async (req, res) => {
+    try {
+        const { clinicId } = req.params;
+
+
+        const deletedClinic = await clinicSchema.findByIdAndDelete(clinicId);
+
+        if (!deletedClinic) {
+            return res.status(404).json({ error: "Clinic not found" });
+        }
+
+        res.status(200).json({ message: "Clinic deleted successfully", success: true });
+    } catch (error) {
+        console.error("Error deleting Doctor:", error);
+        res.status(500).json({ error: "Server error" });
+    }
+
+
+})
+
 app.post("/add_address", async (req, res) => {
     try {
 
