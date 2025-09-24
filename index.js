@@ -458,17 +458,17 @@ app.post("/add_address", async (req, res) => {
 
 })
 
-app.get('/addresses/:email', async (req, res) => {
+app.get('/addresses/:id', async (req, res) => {
     try {
-        const { email } = req.params;
+        const { id } = req.params;
 
         const addresses = await addressesSchema.find(
-            { doctorEmail: email },
+            { doctorId: id },
 
         );
 
         if (!addresses || addresses.length === 0) {
-            return res.status(404).json({ error: "No Addresses found with that email" });
+            return res.status(404).json({ error: "No Addresses found with this DoctorId" });
         }
 
 
