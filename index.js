@@ -600,6 +600,56 @@ app.get("/get_doctor_comments/:doctorId",async(req,res)=>{
       }
 })
 
+// Get details of commenter
+app.get('/get_commenter_details/:id',async(req,res)=>{
+    try {
+        const { id } = req.params;
+    
+        // Try to find the commenter in User schema
+        let commenter = await userSchema.findById(id).select("name image email image");
+        if (commenter) {
+          return res.status(200).json({
+            success: true,
+            type: "user",
+            data: commenter,
+          });
+        }
+    
+        // Try to find the commenter in Doctor schema
+        commenter = await doctorSchema.findById(id).select("name image email image");
+        if (commenter) {
+          return res.status(200).json({
+            success: true,
+            type: "doctor",
+            data: commenter,
+          });
+        }
+    
+        // Try to find the commenter in Clinic schema
+        commenter = await clinicSchema.findById(id).select("name image email image");
+        if (commenter) {
+          return res.status(200).json({
+            success: true,
+            type: "clinic",
+            data: commenter,
+          });
+        }
+    
+        // If not found in any schema
+        return res.status(404).json({
+          success: false,
+          message: "Commenter not found in any collection",
+        });
+      } catch (error) {
+        console.error("Error fetching commenter:", error);
+        res.status(500).json({
+          success: false,
+          message: "Server error while fetching commenter details",
+          error: error.message,
+        });
+      }
+})
+
 
 app.listen(PORT, () => {
     console.log(`Server started on port ${PORT}`);
