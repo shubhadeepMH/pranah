@@ -555,7 +555,7 @@ app.delete('/delete_clinicDoctor/:doctorId', async (req, res) => {
     }
 });
 
-
+// API for posting comment
 app.post('/add_comment',async(req,res)=>{
 
 const {comment, userId,doctorId}=req.body
@@ -568,12 +568,37 @@ try {
     res.status(500).json({ error: 'Internal Server Error' });
     console.log(error)
 }
-
-
-
 })
 
-
+app.get("/get_doctor_comments/:doctorId",async(req,res)=>{
+    try {
+        const { doctorId } = req.params;
+        const skip = parseInt(req.query.skip) || 0; // how many comments to skip
+        const limit = parseInt(req.query.limit) || 10; // how many to fetch each time
+    
+        // Fetch comments from MongoDB
+        const comments = await doctorCommentsSchema.find({ doctorId })
+          .sort({ createdAt: -1 }) // latest comments first
+          .skip(skip)
+          .limit(limit);
+    
+        // Check if more comments exist
+        const total = await doctorCommentsSchema.countDocuments({ doctorId });
+        const hasMore = skip + limit < total;
+    
+        res.json({
+          success: true,
+          skip,
+          limit,
+          total,
+          hasMore,
+          comments,
+        });
+      } catch (error) {
+        console.error("Error fetching comments:", error);
+        res.status(500).json({ success: false, message: "Server error" });
+      }
+})
 
 
 app.listen(PORT, () => {
