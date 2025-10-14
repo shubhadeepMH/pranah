@@ -556,15 +556,13 @@ app.delete('/delete_clinicDoctor/:doctorId', async (req, res) => {
 });
 
 
-app.post('/add_comment',(req,res)=>{
+app.post('/add_comment',async(req,res)=>{
 
 const {comment, userId,doctorId}=req.body
 try {
-    console.log(
-        "comment:",comment, "userId:",userId, "doctorId:",doctorId
-    );
+   
     
-    let result=doctorCommentsSchema.create({comment,userId,doctorId})
+    let result=await doctorCommentsSchema.create({comment,userId,doctorId})
     res.status(201).json({ message: "Comment Added Successfully", result });
 } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
