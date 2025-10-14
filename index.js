@@ -7,6 +7,7 @@ const clinicSchema = require('./Database/Models/Clinics.js')
 const userSchema = require('./Database/Models/Users.js')
 const addressesSchema = require('./Database/Models/doctorAddresses.js')
 const clinicDoctorSchema = require('./Database/Models/ClinicDoctors.js')
+const doctorCommentsSchema=require('./Database/Models/doctorComments.js')
 
 
 let PORT = 5007 || process.env.PORT
@@ -315,6 +316,7 @@ app.post("/find_doctor", async (req, res) => {
 
 })
 
+ //Get Clinic/Hospital(Indiviadual) API
 app.post("/find_clinic", async (req, res) => {
 
     try {
@@ -554,7 +556,24 @@ app.delete('/delete_clinicDoctor/:doctorId', async (req, res) => {
 });
 
 
+app.post('/add_comment',(req,res)=>{
 
+const {comment, userId,doctorId}=req.body
+try {
+    console.log(
+        "comment:",comment, "userId:",userId, "doctorId:",doctorId
+    );
+    
+    let result=doctorCommentsSchema.create({comment,userId,doctorId})
+    res.status(201).json({ message: "Comment Added Successfully", result });
+} catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+    console.log(error)
+}
+
+
+
+})
 
 
 
