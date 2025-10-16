@@ -6,7 +6,6 @@ doctorId:{type:String,require:true},
 comment:{type:String}
 
 
-
-})
+}, { timestamps: true })
 
 module.exports=mongoose.model("DoctorComments",doctorCommentsSchema)

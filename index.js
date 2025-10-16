@@ -573,30 +573,36 @@ try {
 app.get("/get_doctor_comments/:doctorId",async(req,res)=>{
     try {
         const { doctorId } = req.params;
-        const skip = parseInt(req.query.skip) || 0; // how many comments to skip
-        const limit = parseInt(req.query.limit) || 10; // how many to fetch each time
+        const skip = parseInt(req.query.skip) || 0;
+        const limit = parseInt(req.query.limit) || 10;
     
-        // Fetch comments from MongoDB
-        const comments = await doctorCommentsSchema.find({ doctorId })
-          .sort({ createdAt: -1 }) // latest comments first
+        // Fetch total comments count
+        const totalCount = await doctorCommentsSchema.countDocuments({ doctorId });
+    
+        // Fetch comments with skip and limit
+        const comments = await doctorCommentsSchema
+          .find({ doctorId })
+          .sort({ createdAt: -1 }) // latest first
           .skip(skip)
-          .limit(limit);
+          .limit(limit)
+          .lean();
     
         // Check if more comments exist
-        const total = await doctorCommentsSchema.countDocuments({ doctorId });
-        const hasMore = skip + limit < total;
+        const hasMore = skip + limit < totalCount;
     
-        res.json({
+        res.status(200).json({
           success: true,
-          skip,
-          limit,
-          total,
-          hasMore,
           comments,
+          hasMore,
+          totalCount
         });
       } catch (error) {
-        console.error("Error fetching comments:", error);
-        res.status(500).json({ success: false, message: "Server error" });
+        console.error("Error fetching doctor comments:", error);
+        res.status(500).json({
+          success: false,
+          message: "Server error while fetching comments",
+          error: error.message,
+        });
       }
 })
 
