@@ -658,6 +658,61 @@ app.get('/get_commenter_details/:id',async(req,res)=>{
       }
 })
 
+app.post("/rate_doctor", async (req, res) => {
+    try {
+      const { doctorId, userId, rating } = req.body;
+  
+      if (!doctorId || !userId || rating === undefined) {
+        return res.status(400).json({
+          success: false,
+          message: "doctorId, userId, and rating are required",
+        });
+      }
+  
+      const doctor = await doctorSchema.findById(doctorId);
+      if (!doctor) {
+        return res.status(404).json({
+          success: false,
+          message: "Doctor not found",
+        });
+      }
+  
+      // ✅ Check if already rated
+      const userIndex = doctor.raters.indexOf(userId);
+  
+      if (userIndex !== -1) {
+        // User has already rated → update the rating
+        doctor.rating[userIndex] = Number(rating);
+      } else {
+        // New rating
+        doctor.rating.push(Number(rating));
+        doctor.raters.push(userId);
+      }
+  
+      // ✅ Update derived fields
+      const total = doctor.rating.reduce((sum, r) => sum + r, 0);
+      doctor.totalRatings = doctor.rating.length;
+      doctor.avgRating = Number((total / doctor.totalRatings).toFixed(1));
+  
+      await doctor.save();
+  
+      res.status(200).json({
+        success: true,
+        message: userIndex !== -1 ? "Rating updated successfully" : "Rating added successfully",
+        avgRating: doctor.avgRating,
+        totalRatings: doctor.totalRatings,
+      });
+    } catch (error) {
+      console.error("Error rating doctor:", error);
+      res.status(500).json({
+        success: false,
+        message: "Server error while rating doctor",
+        error: error.message,
+      });
+    }
+  });
+  
+
 
 app.listen(PORT, () => {
     console.log(`Server started on port ${PORT}`);
