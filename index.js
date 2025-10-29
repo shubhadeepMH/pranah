@@ -8,6 +8,7 @@ const userSchema = require('./Database/Models/Users.js')
 const addressesSchema = require('./Database/Models/doctorAddresses.js')
 const clinicDoctorSchema = require('./Database/Models/ClinicDoctors.js')
 const doctorCommentsSchema=require('./Database/Models/doctorComments.js')
+const clinicCommentsSchema=require('./Database/Models/clinicComments.js')
 
 
 let PORT = 5007 || process.env.PORT
@@ -555,8 +556,8 @@ app.delete('/delete_clinicDoctor/:doctorId', async (req, res) => {
     }
 });
 
-// API for posting comment
-app.post('/add_comment',async(req,res)=>{
+// API for posting comment for Doctor
+app.post('/add_doctor_comment',async(req,res)=>{
 
 const {comment, userId,doctorId}=req.body
 try {
@@ -608,8 +609,8 @@ app.get("/get_doctor_comments/:doctorId",async(req,res)=>{
       }
 })
 
-// Get details of commenter
-app.get('/get_commenter_details/:id',async(req,res)=>{
+// Get details of commenter for Doctor
+app.get('/get_doctor_commenter_details/:id',async(req,res)=>{
     try {
         const { id } = req.params;
     
@@ -711,7 +712,165 @@ app.post("/rate_doctor", async (req, res) => {
       });
     }
   });
+
+
+// API for posting comment for Clinic
+app.post('/add_clinic_comment',async(req,res)=>{
+
+const {comment, userId,clinicId}=req.body
+try {
+   
+    
+    let result=await clinicCommentsSchema.create({comment,userId,clinicId})
+    res.status(201).json({ message: "Comment Added Successfully", result });
+} catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+    console.log(error)
+}
+})
+//  Get all the comments of linic in chunks
+app.get("/get_clinic_comments/:clinicId",async(req,res)=>{
+    try {
+        const { clinicId } = req.params;
+        let skip = parseInt(req.query.skip) || 0;
+        let limit = parseInt(req.query.limit) || 10;
+    
+        // Count total comments for that Clinic
+        const totalComments = await clinicCommentsSchema.countDocuments({ clinicId });
+    
+        // Fetch the next batch of comments (latest first)
+        const comments = await clinicCommentsSchema.find({ clinicId })
+          .sort({ createdAt: -1 }) // latest first
+          .skip(skip)
+          .limit(limit)
+          .lean();
+    
+        // Calculate hasMore
+        const newSkip = skip + comments.length;
+        const hasMore = newSkip < totalComments;
+    
+        return res.status(200).json({
+          success: true,
+          comments,
+          skip: newSkip,
+          limit,
+          hasMore,
+          totalComments,
+        });
+      } catch (error) {
+        console.error("Error fetching clinic comments:", error);
+        return res.status(500).json({
+          success: false,
+          message: "Server error while fetching comments",
+          error: error.message,
+        });
+      }
+})
+
+// Get details of commenter for clinic
+app.get('/get_clinic_commenter_details/:id',async(req,res)=>{
+    try {
+        const { id } = req.params;
+    
+        // Try to find the commenter in User schema
+        let commenter = await userSchema.findById(id).select("name image email image");
+        if (commenter) {
+          return res.status(200).json({
+            success: true,
+            type: "user",
+            data: commenter,
+          });
+        }
+    
+        // Try to find the commenter in Doctor schema
+        commenter = await doctorSchema.findById(id).select("name image email image");
+        if (commenter) {
+          return res.status(200).json({
+            success: true,
+            type: "doctor",
+            data: commenter,
+          });
+        }
+    
+        // Try to find the commenter in Clinic schema
+        commenter = await clinicSchema.findById(id).select("name image email image");
+        if (commenter) {
+          return res.status(200).json({
+            success: true,
+            type: "clinic",
+            data: commenter,
+          });
+        }
+    
+        // If not found in any schema
+        return res.status(404).json({
+          success: false,
+          message: "Commenter not found in any collection",
+        });
+      } catch (error) {
+        console.error("Error fetching commenter:", error);
+        res.status(500).json({
+          success: false,
+          message: "Server error while fetching commenter details",
+          error: error.message,
+        });
+      }
+})
+
+//   Rate Clinic
+app.post("/rate_clinic", async (req, res) => {
+    try {
+      const { clinicId, userId, rating } = req.body;
   
+      if (!clinicId || !userId || rating === undefined) {
+        return res.status(400).json({
+          success: false,
+          message: "clinicId, userId, and rating are required",
+        });
+      }
+  
+      const clinic = await clinicSchema.findById(clinicId);
+      if (!clinic) {
+        return res.status(404).json({
+          success: false,
+          message: "Clinic not found",
+        });
+      }
+  
+      // ✅ Check if already rated
+      const userIndex = clinic.raters.indexOf(userId);
+  
+      if (userIndex !== -1) {
+        // User has already rated → update the rating
+        clinic.rating[userIndex] = Number(rating);
+      } else {
+        // New rating
+        clinic.rating.push(Number(rating));
+        clinic.raters.push(userId);
+      }
+  
+      // ✅ Update derived fields
+      const total = clinic.rating.reduce((sum, r) => sum + r, 0);
+      clinic.totalRatings = clinic.rating.length;
+      clinic.avgRating = Number((total / clinic.totalRatings).toFixed(1));
+  
+      await clinic.save();
+  
+      res.status(200).json({
+        success: true,
+        message: userIndex !== -1 ? "Rating updated successfully" : "Rating added successfully",
+        avgRating: clinic.avgRating,
+        totalRatings: clinic.totalRatings,
+      });
+    } catch (error) {
+      console.error("Error rating clinic:", error);
+      res.status(500).json({
+        success: false,
+        message: "Server error while rating clinic",
+        error: error.message,
+      });
+    }
+  });
 
 
 app.listen(PORT, () => {

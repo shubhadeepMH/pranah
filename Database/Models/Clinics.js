@@ -16,7 +16,9 @@ const clinicSchema = new mongoose.Schema({
     ownerEmail: { type: String}, // If Clinic Added by any user or Admin its necesssary to track 
     description: {type: String},
     rating: [],
-    raters:[],
+    raters: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // all users who rated
+    avgRating: { type: Number, default: 0 }, // ✅ precomputed field
+    totalRatings: { type: Number, default: 0 }, // ✅ count of ratings
     comments:[],
     resetCode: String,
   }, { timestamps: true });
