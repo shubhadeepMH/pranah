@@ -8,7 +8,8 @@ const userSchema = require('./Database/Models/Users.js')
 const addressesSchema = require('./Database/Models/doctorAddresses.js')
 const clinicDoctorSchema = require('./Database/Models/ClinicDoctors.js')
 const doctorCommentsSchema=require('./Database/Models/doctorComments.js')
-const clinicCommentsSchema=require('./Database/Models/clinicComments.js')
+const clinicCommentsSchema=require('./Database/Models/clinicComments.js');
+// const doctorAddresses = require('./Database/Models/doctorAddresses.js');
 
 
 let PORT = 5007 || process.env.PORT
@@ -872,6 +873,106 @@ app.post("/rate_clinic", async (req, res) => {
     }
   });
 
+  app.get("/search_doctor",async(req,res)=>{
+    try {
+        const {
+          query = "",
+          specialization,
+          education,
+          location, // 🔹 can match addressLine, city, or state
+          pinCode,
+          rating,
+          skip = 0,
+          limit = 10,
+        } = req.query;
+    
+        let doctorIdsFromAddress = null;
+    
+        // STEP 1️⃣: Handle address-based filtering
+        if (location || pinCode) {
+          const addressQuery = {};
+    
+          // Flexible matching in addressLine, city, state
+          if (location) {
+            addressQuery.$or = [
+              { addressLine: { $regex: location, $options: "i" } },
+              { city: { $regex: location, $options: "i" } },
+              { state: { $regex: location, $options: "i" } },
+            ];
+          }
+    
+          if (pinCode) {
+            addressQuery.pinCode = parseInt(pinCode);
+          }
+    
+          const doctorAddresses = await addressesSchema.find(addressQuery, "doctorId");
+          doctorIdsFromAddress = doctorAddresses.map((addr) => addr.doctorId);
+        }
+    
+        // STEP 2️⃣: Build Doctor Query
+        const doctorQuery = {
+          userType: "Doctor",
+          $and: [],
+        };
+    
+        // Search by name / specialization / education
+        if (query) {
+          doctorQuery.$and.push({
+            $or: [
+              { name: { $regex: query, $options: "i" } },
+              { specialization: { $regex: query, $options: "i" } },
+              { education: { $regex: query, $options: "i" } },
+            ],
+          });
+        }
+    
+        if (specialization)
+          doctorQuery.$and.push({
+            specialization: { $regex: specialization, $options: "i" },
+          });
+    
+        if (education)
+          doctorQuery.$and.push({
+            education: { $regex: education, $options: "i" },
+          });
+    
+        // STEP 3️⃣: Apply address-based doctor filtering
+        if (doctorIdsFromAddress && doctorIdsFromAddress.length > 0) {
+          doctorQuery.$and.push({ _id: { $in: doctorIdsFromAddress } });
+        } else if (doctorIdsFromAddress && doctorIdsFromAddress.length === 0) {
+          // No doctors match address filter
+          return res.status(200).json({ success: true, total: 0, results: [] });
+        }
+    
+        // STEP 4️⃣: Optional rating filter (example: only doctors with any rating)
+        if (rating) {
+          doctorQuery.$and.push({
+            rating: { $exists: true, $not: { $size: 0 } },
+          });
+        }
+    
+        if (doctorQuery.$and.length === 0) delete doctorQuery.$and;
+    
+        // STEP 5️⃣: Execute query
+        const doctors = await doctorSchema.find(doctorQuery)
+          .skip(parseInt(skip))
+          .limit(parseInt(limit));
+    
+        const total = await doctorSchema.countDocuments(doctorQuery);
+    
+        res.status(200).json({
+          success: true,
+          total,
+          results: doctors,
+        });
+      } catch (err) {
+        console.error("Error searching doctors:", err);
+        res.status(500).json({
+          success: false,
+          message: "Server error while searching doctors",
+        });
+      }
+  })
 
 app.listen(PORT, () => {
     console.log(`Server started on port ${PORT}`);
