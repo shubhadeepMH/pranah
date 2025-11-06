@@ -23,6 +23,7 @@ const doctorSchema = new mongoose.Schema(
     addedBy: { type: String, trim: true, default: "own" },
     ownerEmail: { type: String },
     addedType: { type: String, trim: true, default: "own" },
+    clinic:{type:String}, //Storing clinic ID for show the clinic details
     resetCode: String,
   },
   { timestamps: true }

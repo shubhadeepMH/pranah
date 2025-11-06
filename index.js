@@ -80,6 +80,7 @@ app.put('/doctor_profile_update', async (req, res) => {
       specialization,
       image,
       showContact,
+      clinicId
     } = req.body;
 
     const doctor = await doctorSchema.findByIdAndUpdate(doctorId, {
@@ -94,12 +95,26 @@ app.put('/doctor_profile_update', async (req, res) => {
         specialization,
         image,
         showContact,
+        clinic: clinicId //Saving clinicID as clinic to show clinic detaiils.
       },
     }, { new: true });
+
+
 
     if (!doctor) {
       return res.status(404).json({ error: 'Doctor not found' });
     }
+
+    // 🧠 2. Add doctorId to clinic's doctors array (only if not already present)
+    if (clinicId) {
+      await clinicSchema.findByIdAndUpdate(
+        clinicId,
+        { $addToSet: { doctors: doctorId } }, // ✅ prevents duplicates
+        { new: true }
+      );
+    }
+
+
 
     res.json({ message: 'Profile updated successfully', doctor });
   } catch (err) {
@@ -165,6 +180,8 @@ app.put('/clinic_update_profile', async (req, res) => {
       description,
       image,
       showContact,
+      clinicType,
+      doctors,
 
 
     } = req.body;
@@ -181,6 +198,7 @@ app.put('/clinic_update_profile', async (req, res) => {
         description,
         image,
         showContact,
+        clinicType
 
       },
     }, { new: true });
@@ -189,7 +207,24 @@ app.put('/clinic_update_profile', async (req, res) => {
       return res.status(404).json({ error: 'Clinic/Hospital not found' });
     }
 
-    res.json({ message: 'Profile updated successfully', clinic });
+     // 🧠 Step 2: If doctors array is provided, add them to clinic.doctors (no duplicates)
+     if (doctors && doctors.length > 0) {
+      // Ensure it's always an array
+      const doctorArray = Array.isArray(doctors) ? doctors : [doctors];
+
+      await clinicSchema.findByIdAndUpdate(
+        clinicId,
+        {
+          $addToSet: { doctors: { $each: doctorArray } }, // ✅ add multiple without duplicates
+        },
+        { new: true }
+      );
+    }
+
+    // 🧠 Step 3: Return updated clinic profile
+    const updatedClinic = await clinicSchema.findById(clinicId);
+
+    res.json({ message: 'Profile updated successfully', clinic: updatedClinic });
   } catch (err) {
 
     res.status(500).json({ error: 'Internal Server Error' });
@@ -1060,6 +1095,48 @@ app.get("/search_clinic", async (req, res) => {
     });
   }
 });
+
+app.delete("/delete_comment/:commentId", async (req, res) => {
+
+  try {
+    const { commentId } = req.params;
+
+    // Try deleting from doctor comments first
+    const deletedDoctorComment = await doctorCommentsSchema.findByIdAndDelete(commentId);
+    if (deletedDoctorComment) {
+      return res.status(200).json({
+        success: true,
+        message: "Doctor comment deleted successfully",
+        deletedFrom: "doctor",
+      });
+    }
+
+    // If not found, try deleting from clinic comments
+    const deletedClinicComment = await clinicCommentsSchema.findByIdAndDelete(commentId);
+    if (deletedClinicComment) {
+      return res.status(200).json({
+        success: true,
+        message: "Clinic comment deleted successfully",
+        deletedFrom: "clinic",
+      });
+    }
+
+    // If not found in either schema
+    return res.status(404).json({
+      success: false,
+      message: "Comment not found",
+    });
+
+  } catch (error) {
+    console.error("Error deleting comment:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+
+})
 
 
 app.listen(PORT, () => {
