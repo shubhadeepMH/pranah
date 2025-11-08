@@ -16,10 +16,7 @@ let PORT = 5007 || process.env.PORT
 
 
 // Middlewears
-app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST", "PUT", "DELETE"],
-}));
+app.use(cors());
 app.use(express.json());
 
 
@@ -1099,8 +1096,8 @@ app.get("/search_clinic", async (req, res) => {
   }
 });
 
-// ✅ Alternate route for deleting comments using POST method
-app.post("/remove_comment/:commentId", async (req, res) => {
+// delete comment API
+app.delete("/delete_comment/:commentId", async (req, res) => {
   try {
     const { commentId } = req.params;
 
