@@ -1124,7 +1124,7 @@ app.delete("/delete_comment/:commentId", async (req, res) => {
     // If not found in either schema
     return res.status(404).json({
       success: false,
-      message: "Comment not found",
+      message: "Comment not found bro",
     });
 
   } catch (error) {
