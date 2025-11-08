@@ -210,8 +210,8 @@ app.put('/clinic_update_profile', async (req, res) => {
       return res.status(404).json({ error: 'Clinic/Hospital not found' });
     }
 
-     // 🧠 Step 2: If doctors array is provided, add them to clinic.doctors (no duplicates)
-     if (doctors && doctors.length > 0) {
+    // 🧠 Step 2: If doctors array is provided, add them to clinic.doctors (no duplicates)
+    if (doctors && doctors.length > 0) {
       // Ensure it's always an array
       const doctorArray = Array.isArray(doctors) ? doctors : [doctors];
 
@@ -1099,8 +1099,8 @@ app.get("/search_clinic", async (req, res) => {
   }
 });
 
-app.delete("/delete_comment/:commentId", async (req, res) => {
-
+// ✅ Alternate route for deleting comments using POST method
+app.post("/remove_comment/:commentId", async (req, res) => {
   try {
     const { commentId } = req.params;
 
@@ -1138,8 +1138,8 @@ app.delete("/delete_comment/:commentId", async (req, res) => {
       error: error.message,
     });
   }
+});
 
-})
 
 
 app.listen(PORT, () => {
