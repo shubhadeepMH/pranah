@@ -362,7 +362,7 @@ app.post("/find_clinic", async (req, res) => {
 
   try {
     let clinicId = req.body.clinicId
-    let clinicDetails = await clinicSchema.findById({ findById });
+    let clinicDetails = await clinicSchema.findById(clinicId);
 
     if (!clinicDetails) {
       res.send({ message: "Clinic not found", success: false })
@@ -381,7 +381,7 @@ app.post("/find_user", async (req, res) => {
 
   try {
     let userId = req.body.userId
-    let userDetails = await userSchema.findById({ userId });
+    let userDetails = await userSchema.findById(userId);
 
     if (!userDetails) {
       res.send({ message: "user not found", success: false })
