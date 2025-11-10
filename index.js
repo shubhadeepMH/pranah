@@ -336,30 +336,33 @@ app.get("/clinics", async (req, res) => {
 //Get Doctor(Indiviadual) API
 
 app.post("/find_doctor", async (req, res) => {
-
   try {
-    let email = req.body.email
-    let doctorDetails = await doctorSchema.findOne({ email });
+    const { doctorId } = req.body;
 
-    if (!doctorDetails) {
-      res.send({ message: "Doctor not found", success: false })
-    } else {
-      res.json({ user: doctorDetails, success: true });
+    if (!doctorId) {
+      return res.status(400).json({ message: "userId is required", success: false });
     }
 
+    // ✅ Find doctor by _id instead of email
+    const doctorDetails = await doctorSchema.findById(doctorId);
 
+    if (!doctorDetails) {
+      return res.status(404).json({ message: "Doctor not found", success: false });
+    }
+
+    res.status(200).json({ user: doctorDetails, success: true });
   } catch (error) {
-    res.return({ message: error })
+    console.error("Error finding doctor:", error);
+    res.status(500).json({ message: "Internal server error", success: false });
   }
-
-})
+});
 
 //Get Clinic/Hospital(Indiviadual) API
 app.post("/find_clinic", async (req, res) => {
 
   try {
-    let email = req.body.email
-    let clinicDetails = await clinicSchema.findOne({ email });
+    let clinicId = req.body.clinicId
+    let clinicDetails = await clinicSchema.findById({ findById });
 
     if (!clinicDetails) {
       res.send({ message: "Clinic not found", success: false })
@@ -377,8 +380,8 @@ app.post("/find_clinic", async (req, res) => {
 app.post("/find_user", async (req, res) => {
 
   try {
-    let email = req.body.email
-    let userDetails = await userSchema.findOne({ email });
+    let userId = req.body.userId
+    let userDetails = await userSchema.findById({ userId });
 
     if (!userDetails) {
       res.send({ message: "user not found", success: false })
