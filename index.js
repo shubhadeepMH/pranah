@@ -80,7 +80,7 @@ app.put('/doctor_profile_update', async (req, res) => {
       specialization,
       image,
       showContact,
-      clinicId
+    
     } = req.body;
 
     const doctor = await doctorSchema.findByIdAndUpdate(doctorId, {
@@ -95,7 +95,7 @@ app.put('/doctor_profile_update', async (req, res) => {
         specialization,
         image,
         showContact,
-        clinic: clinicId //Saving clinicID as clinic to show clinic detaiils.
+       
       },
     }, { new: true });
 

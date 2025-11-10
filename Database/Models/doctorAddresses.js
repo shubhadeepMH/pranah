@@ -10,7 +10,8 @@ pinCode:{type:Number},
 availability:{type:Array},
 addedBy:{type:String}, 
 ownerEmail:{type:String}, // If Doctor Address Added by any user or Admin its necesssary to track 
-
+clinicId:{type:String},
+clinicName:{type:String}
 })
 
 module.exports=mongoose.model("Addresses",doctorAddressesSchema)
