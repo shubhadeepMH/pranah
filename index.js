@@ -1141,6 +1141,47 @@ app.delete("/delete_comment/:commentId", async (req, res) => {
   }
 });
 
+app.post("/add_doctor_to_clinicDoctors_list",async(req,res)=>{
+  try {
+    const { clinicId, doctorId } = req.body;
+
+    // 🛑 Validate input
+    if (!clinicId || !doctorId) {
+      return res.status(400).json({ message: "clinicId and doctorId are required", success: false });
+    }
+
+    // 🧠 Find the clinic
+    const clinic = await clinicSchema.findById(clinicId);
+
+    if (!clinic) {
+      return res.status(404).json({ message: "Clinic not found", success: false });
+    }
+
+    // ⚡ Prevent duplicate doctor entries
+    if (clinic.doctors.includes(doctorId)) {
+      return res.status(400).json({ message: "Doctor already added to this clinic", success: false });
+    }
+
+    // ➕ Add doctor to the clinic’s doctors array
+    clinic.doctors.push(doctorId);
+
+    // 💾 Save the updated clinic
+    await clinic.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Doctor added successfully to the clinic",
+      clinic,
+    });
+  } catch (error) {
+    console.error("Error adding doctor to clinic:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+})
 
 
 app.listen(PORT, () => {
