@@ -5,6 +5,7 @@ const clinicDoctorSchema=new mongoose.Schema({
     name:{type:String},
     education:{type:String},
     specialization:{type:String},    
+    description:{type:String}
 
 },{ timestamps: true })
 

@@ -486,7 +486,8 @@ app.post("/add_address", async (req, res) => {
 
     const newAddresses = req.body.addresses;
 
-
+    
+    
     // Insert all addresses into the collection
     const result = await addressesSchema.insertMany(newAddresses);
 
