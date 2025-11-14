@@ -80,7 +80,7 @@ app.put('/doctor_profile_update', async (req, res) => {
       specialization,
       image,
       showContact,
-    
+
     } = req.body;
 
     const doctor = await doctorSchema.findByIdAndUpdate(doctorId, {
@@ -95,7 +95,7 @@ app.put('/doctor_profile_update', async (req, res) => {
         specialization,
         image,
         showContact,
-       
+
       },
     }, { new: true });
 
@@ -238,7 +238,7 @@ app.post('/add_doctor', async (req, res) => {
 
 
 
-  const { name, mobile, specialization, education, experience, description, ownerEmail, addedBy,clinic } = req.body;
+  const { name, mobile, specialization, education, experience, description, ownerEmail, addedBy, clinic } = req.body;
 
   try {
     const doctor = await doctorSchema.create({
@@ -486,8 +486,8 @@ app.post("/add_address", async (req, res) => {
 
     const newAddresses = req.body.addresses;
 
-    
-    
+
+
     // Insert all addresses into the collection
     const result = await addressesSchema.insertMany(newAddresses);
 
@@ -1142,7 +1142,7 @@ app.delete("/delete_comment/:commentId", async (req, res) => {
   }
 });
 
-app.post("/add_doctor_to_clinicDoctors_list",async(req,res)=>{
+app.post("/add_doctor_to_clinicDoctors_list", async (req, res) => {
   try {
     const { clinicId, doctorId } = req.body;
 
@@ -1184,6 +1184,67 @@ app.post("/add_doctor_to_clinicDoctors_list",async(req,res)=>{
   }
 })
 
+// Find owner of the Doctors(If added by user) for show credits
+app.get("/get_contributor/:ownerEmail", async (req, res) => {
+  try {
+    const { ownerEmail } = req.params;
+
+    if (!ownerEmail) {
+      return res.status(400).json({
+        success: false,
+        message: "Owner email is required",
+      });
+    }
+
+
+
+    // 2️⃣ Search in User Schema
+    const userOwner = await userSchema.findOne({ email: ownerEmail });
+
+    if (userOwner) {
+      return res.status(200).json({
+        success: true,
+        from: "user",
+        data: userOwner,
+      });
+    }
+
+
+    // 1️⃣ Search in Clinic Schema
+    const clinicOwner = await clinicSchema.findOne({ email: ownerEmail });
+
+    if (clinicOwner) {
+      return res.status(200).json({
+        success: true,
+        from: "clinic",
+        data: clinicOwner,
+      });
+    }
+
+    // 3️⃣ Search in Doctor Schema
+    const doctorOwner = await doctorSchema.findOne({ email: ownerEmail });
+
+    if (doctorOwner) {
+      return res.status(200).json({
+        success: true,
+        from: "doctor",
+        data: doctorOwner,
+      });
+    }
+
+    // ❌ No match found anywhere
+    return res.status(404).json({
+      success: false,
+      message: "No contributor found with this email",
+    });
+  } catch (error) {
+    console.log("Error finding contributor:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);

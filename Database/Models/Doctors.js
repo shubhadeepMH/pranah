@@ -20,9 +20,9 @@ const doctorSchema = new mongoose.Schema(
     totalRatings: { type: Number, default: 0 }, // ✅ count of ratings
     image: { type: String, trim: true, default: "" },
     showContact: { type: Boolean, default: false },
-    addedBy: { type: String, trim: true, default: "own" },
+    addedBy: { type: String, trim: true, default: "Self" },
     ownerEmail: { type: String },
-    addedType: { type: String, trim: true, default: "own" },
+    addedType: { type: String, trim: true, default: "Self" },
     clinic:{type:String}, //Storing clinic ID for show the clinic details
     resetCode: String,
   },

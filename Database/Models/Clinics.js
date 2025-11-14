@@ -12,7 +12,7 @@ const clinicSchema = new mongoose.Schema({
   pinCode: { type: Number },
   image: { type: String, trim: true, default: "" },
   userType: { type: String, default: "Clinic" },
-  addedBy: { type: String, trim: true, default: 'own' }, //There will be only three options Own, Admin, User
+  addedBy: { type: String, trim: true, default: 'Self' }, //There will be only three options Own, Admin, User
   ownerEmail: { type: String }, // If Clinic Added by any user or Admin its necesssary to track 
   description: { type: String },
   // ✅ Store doctor IDs (string only, no ref) to show doctors list
