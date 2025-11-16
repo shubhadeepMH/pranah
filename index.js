@@ -335,6 +335,36 @@ app.get("/get_doctors", async (req, res) => {
   }
 });
 
+// Get paginated clinics (20 per page)
+app.get("/clinics", async (req, res) => {
+  try {
+    let page = parseInt(req.query.page) || 1;
+    let limit = 20;
+    let skip = (page - 1) * limit;
+
+    const totalClinics = await clinicSchema.countDocuments();
+
+    const clinics = await clinicSchema
+      .find()
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 }); // latest first
+
+    res.json({
+      success: true,
+      message: `Fetched ${clinics.length} clinics`,
+      page,
+      totalClinics,
+      hasMore: skip + clinics.length < totalClinics,
+      data: clinics
+    });
+  } catch (err) {
+    console.error("Error fetching clinics:", err);
+    res.status(500).json({ success: false, error: "Error fetching clinics" });
+  }
+});
+
+
 
 //Get Doctor(Indiviadual) API
 
