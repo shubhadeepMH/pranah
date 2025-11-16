@@ -308,30 +308,33 @@ app.post("/logIn", async (req, res) => {
 
 })
 //Get All doctors API
-app.get("/", async (req, res) => {
+app.get("/get_doctors", async (req, res) => {
   try {
-    const totalDoctors = await doctorSchema.countDocuments();
-    const limit = totalDoctors < 20 ? totalDoctors : 20;
-    const doctors = await doctorSchema.aggregate([{ $sample: { size: limit } }]);
-    res.json({ message: `Fetched ${doctors.length} random doctors`, data: doctors });
+    const page = parseInt(req.query.page) || 1; 
+    const limit = 20;
+    const skip = (page - 1) * limit;
+
+    // Fetch next 20 doctors
+    const doctors = await doctorSchema.find({})
+      .skip(skip)
+      .limit(limit);
+
+    const total = await doctorSchema.countDocuments();
+
+    res.json({
+      message: `Fetched ${doctors.length} doctors`,
+      totalDoctors: total,
+      currentPage: page,
+      hasMore: skip + doctors.length < total,
+      data: doctors
+    });
+
   } catch (err) {
-
-    res.status(500).json({ error: 'Error fetching random doctors' });
+    console.error(err);
+    res.status(500).json({ error: 'Error fetching doctors' });
   }
-})
+});
 
-//Get All clinics API
-app.get("/clinics", async (req, res) => {
-  try {
-    const totalClinics = await clinicSchema.countDocuments();
-    const limit = totalClinics < 20 ? totalClinics : 20;
-    const clinics = await clinicSchema.aggregate([{ $sample: { size: limit } }]);
-    res.json({ message: `Fetched ${clinics.length} random clinics`, data: clinics });
-  } catch (err) {
-
-    res.status(500).json({ error: 'Error fetching random clinics' });
-  }
-})
 
 //Get Doctor(Indiviadual) API
 
