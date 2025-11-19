@@ -1279,6 +1279,48 @@ app.get("/get_contributor/:ownerEmail", async (req, res) => {
   }
 });
 
+  // API for update user image
+app.post("/update_user_image", async (req, res) => {
+  try {
+    const { userId, imageUrl } = req.body;
+
+    if (!userId || !imageUrl) {
+      return res.send({
+        message: "userId and imageUrl are required",
+        success: false
+      });
+    }
+
+    // Update user image
+    const updatedUser = await userSchema.findByIdAndUpdate(
+      userId,
+      { image: imageUrl },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.send({
+        message: "User not found",
+        success: false
+      });
+    }
+
+    res.send({
+      message: "Image updated successfully",
+      user: updatedUser,
+      success: true
+    });
+
+  } catch (error) {
+    res.send({
+      message: error.message,
+      success: false
+    });
+  }
+});
+
+
+
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
 });
