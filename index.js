@@ -409,7 +409,7 @@ app.post("/find_clinic", async (req, res) => {
   }
 
 })
-
+// Find User Using userId for (Profile Screen ..)
 app.post("/find_user", async (req, res) => {
 
   try {
@@ -428,6 +428,49 @@ app.post("/find_user", async (req, res) => {
   }
 
 })
+
+// Find user using user email for (DoctorDetailsScreen and ClinicDetailsScreen to show credit)
+app.get("/find_user_details/:userEmail", async (req, res) => {
+  try {
+    const userEmail = req.params.userEmail;
+
+    if (!userEmail) {
+      return res.status(400).json({
+        status: "error",
+        message: "User email is required"
+      });
+    }
+
+    // 🔍 Find user inside userSchema only
+    const user = await userSchema.findOne({ email: userEmail });
+
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found"
+      });
+    }
+
+    // 🎯 Return user details
+    return res.status(200).json({
+      status: "success",
+      message: "User details fetched successfully",
+      user
+    });
+
+  } catch (error) {
+    console.error("Error fetching user details:", error);
+
+    return res.status(500).json({
+      status: "error",
+      message: "Server error while fetching user details",
+      error: error.message
+    });
+  }
+});
+
+
+
 //Get Doctor those are added by user 
 app.get('/user_added_doctors/:email', async (req, res) => {
   try {
