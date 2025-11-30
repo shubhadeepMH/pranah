@@ -9,6 +9,7 @@ const addressesSchema = require('./Database/Models/doctorAddresses.js')
 const clinicDoctorSchema = require('./Database/Models/ClinicDoctors.js')
 const doctorCommentsSchema = require('./Database/Models/doctorComments.js')
 const clinicCommentsSchema = require('./Database/Models/clinicComments.js');
+const ImageKit = require("imagekit");
 // const doctorAddresses = require('./Database/Models/doctorAddresses.js');
 
 
@@ -18,6 +19,12 @@ let PORT = 5007 || process.env.PORT
 // Middlewears
 app.use(cors());
 app.use(express.json());
+
+const imagekit = new ImageKit({
+  publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
+  privateKey: process.env.IMAGEKIT_PRIVATE_KEY, // Stored securely on server
+  urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT
+});
 
 
 mongoose.connect('mongodb+srv://e-sellers:2JSIH4wypnypujbD@cluster0.udmk0hg.mongodb.net/Pranah', { useUnifiedTopology: true });
@@ -1362,6 +1369,11 @@ app.post("/update_user_image", async (req, res) => {
   }
 });
 
+//For ImageKit Authorization token
+app.get("/imagekit_auth", function (req, res) {
+  var authenticationParameters = imagekit.getAuthenticationParameters();
+  res.json(authenticationParameters);
+});
 
 
 app.listen(PORT, () => {
