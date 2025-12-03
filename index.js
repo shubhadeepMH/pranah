@@ -83,6 +83,7 @@ app.put('/doctor_profile_update', async (req, res) => {
       specialization,
       image,
       showContact,
+      imageDeleteUrl,
 
     } = req.body;
 
@@ -98,7 +99,7 @@ app.put('/doctor_profile_update', async (req, res) => {
         specialization,
         image,
         showContact,
-
+        imageDeleteUrl,
       },
     }, { new: true });
 
@@ -185,6 +186,7 @@ app.put('/clinic_update_profile', async (req, res) => {
       showContact,
       clinicType,
       doctors,
+      imageDeleteUrl,
 
 
     } = req.body;
@@ -201,7 +203,8 @@ app.put('/clinic_update_profile', async (req, res) => {
         description,
         image,
         showContact,
-        clinicType
+        clinicType,
+        imageDeleteUrl,
 
       },
     }, { new: true });
@@ -1328,7 +1331,7 @@ app.get("/get_contributor/:ownerEmail", async (req, res) => {
   // API for update user image
 app.post("/update_user_image", async (req, res) => {
   try {
-    const { userId, imageUrl } = req.body;
+    const { userId, imageUrl, imageDeleteUrl } = req.body;
 
     if (!userId || !imageUrl) {
       return res.send({
@@ -1340,7 +1343,7 @@ app.post("/update_user_image", async (req, res) => {
     // Update user image
     const updatedUser = await userSchema.findByIdAndUpdate(
       userId,
-      { image: imageUrl },
+      { image: imageUrl, imageDeleteUrl: imageDeleteUrl },
       { new: true }
     );
 
