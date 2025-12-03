@@ -19,7 +19,7 @@ const doctorSchema = new mongoose.Schema(
     avgRating: { type: Number, default: 0 }, // ✅ precomputed field
     totalRatings: { type: Number, default: 0 }, // ✅ count of ratings
     image: { type: String, trim: true, default: "" },
-    imageDeleteUrl: { type: String},
+    imageDeleteUrl: { type: String},  // Storing the delete url of the image from imgBB to delete the previously uploaded image from the imgBB while updating the image
     showContact: { type: Boolean, default: false },
     addedBy: { type: String, trim: true, default: "Self" },
     ownerEmail: { type: String },
