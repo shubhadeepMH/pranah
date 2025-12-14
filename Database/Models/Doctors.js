@@ -8,7 +8,7 @@ const doctorSchema = new mongoose.Schema(
     mobile: { type: String, trim: true },
     password: { type: String, trim: true, min: 6, max: 64 },
     userType: { type: String, default: "Doctor" },
-    price: { type: Number, default: 0 },
+    fees: { type: Number, default: 0 },
     comments: [],
     description: { type: String },
     experience: { type: Number, default: 0 },

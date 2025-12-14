@@ -6,6 +6,7 @@ const userSchema = new mongoose.Schema({
     email: { type: String, trim: true, },
     mobile: { type: String, trim: true,  },
     password: { type: String, trim: true, required: true, min: 6, max: 64 },
+    credit: { type: Number, default: 0 },
     address: { type: String, default:"Unknown" },
     image: { type: String, trim: true, url: String, default:"" },
     imageDeleteUrl: { type: String}, // Storing the delete url of the image from imgBB to delete the previously uploaded image from the imgBB while updating the image

@@ -84,6 +84,7 @@ app.put('/doctor_profile_update', async (req, res) => {
       image,
       showContact,
       imageDeleteUrl,
+      fees
 
     } = req.body;
 
@@ -100,6 +101,7 @@ app.put('/doctor_profile_update', async (req, res) => {
         image,
         showContact,
         imageDeleteUrl,
+        fees
       },
     }, { new: true });
 
@@ -244,7 +246,7 @@ app.post('/add_doctor', async (req, res) => {
 
 
 
-  const { name, mobile, specialization, education, experience, description, ownerEmail, addedBy, clinic } = req.body;
+  const { name, mobile, specialization, education, experience, description, ownerEmail, addedBy, clinic, fees } = req.body;
 
   try {
     const doctor = await doctorSchema.create({
@@ -256,7 +258,8 @@ app.post('/add_doctor', async (req, res) => {
       description,
       addedBy,
       ownerEmail,
-      clinic
+      clinic,
+      fees
 
     });
 
@@ -1372,6 +1375,16 @@ app.post("/update_user_image", async (req, res) => {
 app.get("/imagekit_auth", function (req, res) {
   var authenticationParameters = imagekit.getAuthenticationParameters();
   res.json(authenticationParameters);
+});
+
+app.patch("/update_user_credit", async (req, res) => {
+  try {
+    const { userId, credit } = req.body;
+    const updatedUser = await userSchema.findByIdAndUpdate(userId, { credit }, { new: true });
+    res.status(200).json({ message: "Credit updated successfully", user: updatedUser });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error", error: error.message });
+  }
 });
 
 
