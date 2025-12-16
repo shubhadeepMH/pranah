@@ -290,10 +290,10 @@ app.post('/add_doctor', async (req, res) => {
 app.post('/add_clinic', async (req, res) => {
 
   try {
-    const { name, title, email, addressLine, city, state, pinCode, addedBy, ownerEmail, description, } = req.body
+    const { name, title, email, addressLine, city, state, pinCode, addedBy, ownerEmail, description,clinicType } = req.body
 
     const clinic = await clinicSchema.create({
-      name, title, email, addressLine, city, state, pinCode, addedBy, ownerEmail, description,
+      name, title, email, addressLine, city, state, pinCode, addedBy, ownerEmail, description,clinicType
     })
     res.status(201).json({ message: "Clinic Added Successfully", clinic });
   } catch (error) {
