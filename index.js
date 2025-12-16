@@ -104,11 +104,8 @@ app.put('/doctor_profile_update', async (req, res) => {
     if (image !== undefined) updateData.image = image;
     if (imageDeleteUrl !== undefined) updateData.imageDeleteUrl = imageDeleteUrl;
     if (showContact !== undefined) updateData.showContact = showContact;
-
-    // ✅ MOST IMPORTANT FIX — fees handling
-    if (fees !== undefined && fees !== "") {
-      updateData.fees = Number(fees);
-    }
+    if(fees!==undefined) updateData.fees = fees;
+    
 
     const doctor = await doctorSchema.findByIdAndUpdate(
       doctorId,

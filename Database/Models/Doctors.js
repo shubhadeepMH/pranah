@@ -8,10 +8,10 @@ const doctorSchema = new mongoose.Schema(
     mobile: { type: String, trim: true },
     password: { type: String, trim: true, min: 6, max: 64 },
     userType: { type: String, default: "Doctor" },
-    fees: { type: Number, default: 0 },
+    fees: { type: String,},
     comments: [],
     description: { type: String },
-    experience: { type: Number, default: 0 },
+    experience: { type: String},
     education: { type: String },
     specialization: { type: String, default: "General Physician" },
     rating: [{ type: Number }], // all individual ratings
