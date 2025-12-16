@@ -67,11 +67,13 @@ app.post('/doctor_signUp', async (req, res) => {
 // Update Doctor Profile
 
 app.put('/doctor_profile_update', async (req, res) => {
-
-  // controllers/doctors.js
-
   try {
-    const doctorId = req.body.id;
+    const { id: doctorId } = req.body;
+
+    if (!doctorId) {
+      return res.status(400).json({ error: "Doctor ID is required" });
+    }
+
     const {
       name,
       email,
@@ -84,51 +86,64 @@ app.put('/doctor_profile_update', async (req, res) => {
       image,
       showContact,
       imageDeleteUrl,
-      fees
-
+      fees,
+      clinicId // ✅ OPTIONAL (safe now)
     } = req.body;
 
-    const doctor = await doctorSchema.findByIdAndUpdate(doctorId, {
-      $set: {
-        name,
-        title,
-        email,
-        mobile,
-        description,
-        experience,
-        education,
-        specialization,
-        image,
-        showContact,
-        imageDeleteUrl,
-        fees
-      },
-    }, { new: true });
+    // ✅ Build update object safely (NO undefined values)
+    const updateData = {};
 
+    if (name !== undefined) updateData.name = name;
+    if (email !== undefined) updateData.email = email;
+    if (title !== undefined) updateData.title = title;
+    if (mobile !== undefined) updateData.mobile = mobile;
+    if (description !== undefined) updateData.description = description;
+    if (experience !== undefined) updateData.experience = experience;
+    if (education !== undefined) updateData.education = education;
+    if (specialization !== undefined) updateData.specialization = specialization;
+    if (image !== undefined) updateData.image = image;
+    if (imageDeleteUrl !== undefined) updateData.imageDeleteUrl = imageDeleteUrl;
+    if (showContact !== undefined) updateData.showContact = showContact;
 
-
-    if (!doctor) {
-      return res.status(404).json({ error: 'Doctor not found' });
+    // ✅ MOST IMPORTANT FIX — fees handling
+    if (fees !== undefined && fees !== "") {
+      updateData.fees = Number(fees);
     }
 
-    // 🧠 2. Add doctorId to clinic's doctors array (only if not already present)
+    const doctor = await doctorSchema.findByIdAndUpdate(
+      doctorId,
+      { $set: updateData },
+      {
+        new: true,
+        runValidators: true // ✅ prevents bad data
+      }
+    );
+
+    if (!doctor) {
+      return res.status(404).json({ error: "Doctor not found" });
+    }
+
+    // ✅ clinicId is now SAFE
     if (clinicId) {
       await clinicSchema.findByIdAndUpdate(
         clinicId,
-        { $addToSet: { doctors: doctorId } }, // ✅ prevents duplicates
-        { new: true }
+        { $addToSet: { doctors: doctorId } }
       );
     }
 
+    res.status(200).json({
+      message: "Profile updated successfully",
+      doctor
+    });
 
-
-    res.json({ message: 'Profile updated successfully', doctor });
   } catch (err) {
-
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error("Doctor profile update error:", err);
+    res.status(500).json({
+      error: err.message || "Internal Server Error"
+    });
   }
-
 });
+
 
 // User SignUp
 app.post('/user_signUp', async (req, res) => {
