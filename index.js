@@ -578,6 +578,7 @@ app.delete("/delete_clinic/:clinicId", async (req, res) => {
 
 })
 
+    //  Adding addresses for doctor
 app.post("/add_address", async (req, res) => {
   try {
 
@@ -598,7 +599,7 @@ app.post("/add_address", async (req, res) => {
   }
 
 })
-
+  // Find Addresses by DoctorId
 app.get('/addresses/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -1398,6 +1399,67 @@ app.patch("/update_user_credit", async (req, res) => {
     res.status(500).json({ message: "Internal server error", error: error.message });
   }
 });
+
+
+  // Update Doctor Address(When user update)
+app.put("/doctor_address_update", async (req, res) => {
+  try {
+    const {
+      doctorId,
+      doctorEmail,
+      addressLine,
+      city,
+      state,
+      pinCode,
+      availability,
+      addedBy,
+      ownerEmail,
+      clinicId,
+      clinicName
+    } = req.body;
+
+    if (!doctorId) {
+      return res.status(400).json({ error: "doctorId is required" });
+    }
+
+    // ✅ Build update object safely
+    const updateData = {};
+
+    if (doctorEmail !== undefined) updateData.doctorEmail = doctorEmail;
+    if (addressLine !== undefined) updateData.addressLine = addressLine;
+    if (city !== undefined) updateData.city = city;
+    if (state !== undefined) updateData.state = state;
+    if (pinCode !== undefined) updateData.pinCode = pinCode;
+    if (availability !== undefined) updateData.availability = availability;
+    if (addedBy !== undefined) updateData.addedBy = addedBy;
+    if (ownerEmail !== undefined) updateData.ownerEmail = ownerEmail;
+    if (clinicId !== undefined) updateData.clinicId = clinicId;
+    if (clinicName !== undefined) updateData.clinicName = clinicName;
+
+    // ✅ Find & Update (or create)
+    const address = await addressesSchema.findOneAndUpdate(
+      { doctorId}, // 🔒 doctor 
+      { $set: updateData },
+      {
+        new: true,
+        upsert: true,
+        runValidators: true
+      }
+    );
+
+    res.status(200).json({
+      message: "Doctor address updated successfully",
+      address
+    });
+
+  } catch (error) {
+    console.error("Doctor address update error:", error);
+    res.status(500).json({
+      error: error.message || "Internal Server Error"
+    });
+  }
+});
+
 
 
 app.listen(PORT, () => {
