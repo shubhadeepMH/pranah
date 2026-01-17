@@ -639,6 +639,46 @@ app.delete('/delete_address/:addressId', async (req, res) => {
   }
 });
 
+//Delete address of which doctor added by User/Admin
+
+app.delete('/delete_user_added_doctor_address', async (req, res) => {
+  try {
+    const { doctorId } = req.body;
+
+    if (!doctorId) {
+      return res.status(400).json({
+        success: false,
+        error: "doctorId is required"
+      });
+    }
+
+    // Delete ALL addresses linked to this doctorId
+    const result = await addressesSchema.deleteMany({ doctorId });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "No addresses found for this doctor"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Doctor address(es) deleted successfully",
+      deletedCount: result.deletedCount
+    });
+
+  } catch (error) {
+    console.error("Delete doctor address error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Server error"
+    });
+  }
+});
+
+
+
 app.post('/add_clinicDoctor', async (req, res) => {
   let doctors = req.body.doctors;
 
