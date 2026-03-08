@@ -333,14 +333,27 @@ app.post("/logIn", async (req, res) => {
 //Get All doctors API
 app.get("/get_doctors", async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1; 
+    const page = parseInt(req.query.page) || 1;
     const limit = 20;
     const skip = (page - 1) * limit;
+    
+    // 1. Get the seed from the query (e.g., ?page=1&seed=12345)
+    // If no seed is provided, we default to 1 so the order is at least stable
+    const seed = parseFloat(req.query.seed) || 1;
 
-    // Fetch next 20 doctors
-    const doctors = await doctorSchema.find({})
-      .skip(skip)
-      .limit(limit);
+    // 2. Use an aggregation pipeline to create a deterministic random order
+    const doctors = await doctorSchema.aggregate([
+      {
+        $addFields: {
+          // This creates a pseudo-random value for each doc based on its ID + your seed
+          // It ensures the "shuffle" is the same every time this specific seed is used
+          randomOrder: { $mod: [{ $toLong: "$_id" }, seed] } 
+        }
+      },
+      { $sort: { randomOrder: 1, _id: 1 } }, // Sort by our new field
+      { $skip: skip },
+      { $limit: limit }
+    ]);
 
     const total = await doctorSchema.countDocuments();
 
@@ -348,6 +361,7 @@ app.get("/get_doctors", async (req, res) => {
       message: `Fetched ${doctors.length} doctors`,
       totalDoctors: total,
       currentPage: page,
+      seed: seed, // Send it back so the frontend knows which seed it's using
       hasMore: skip + doctors.length < total,
       data: doctors
     });
