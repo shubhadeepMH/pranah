@@ -337,37 +337,25 @@ app.get("/get_doctors", async (req, res) => {
     const limit = 20;
     const skip = (page - 1) * limit;
     
-    // 1. Get seed and ensure it's a number (default to a prime for better shuffling)
-    const seed = parseInt(req.query.seed) || 12347;
+    // Get seed from frontend (e.g., 123456)
+    const seed = req.query.seed || "default_seed";
 
     const doctors = await doctorSchema.aggregate([
       {
         $addFields: {
-          // 2. STABLE SHUFFLE MATH:
-          // We take the _id, convert to string, and extract only the DIGITS.
-          // Then multiply by the seed (this is what actually shuffles the order).
-          randomSortKey: {
-            $mod: [
-              { 
-                $multiply: [
-                  { 
-                    $convert: { 
-                      // Grab characters and use a fallback for any hex 'a-f'
-                      input: { $substr: [{ $toString: "$_id" }, 0, 8] }, 
-                      to: "long", 
-                      onError: 12345 // Fallback value if hex conversion fails
-                    } 
-                  },
-                  seed // Multiplying creates the "shuffle"
-                ]
-              },
-              1000000 // A large range for the random positions
-            ]
+          // 🚀 THE MAGIC: 
+          // We combine the Doctor's ID and your Seed into one string.
+          // Then we HASH it. This creates a totally random number for every doctor.
+          // Even a 1-digit change in seed will completely re-shuffle the list.
+          randomSortKey: { 
+            $toHashedIndexKey: { 
+              $concat: [ { $toString: "$_id" }, "_", seed.toString() ] 
+            } 
           }
         }
       },
-      // 3. Sort by our scrambled key
-      { $sort: { randomSortKey: 1, _id: 1 } },
+      // Sort by the hash (this is what gives the "Social Media" feel)
+      { $sort: { randomSortKey: 1 } }, 
       { $skip: skip },
       { $limit: limit }
     ]);
@@ -384,11 +372,10 @@ app.get("/get_doctors", async (req, res) => {
     });
 
   } catch (err) {
-    console.error("API Error:", err);
-    res.status(500).json({ error: 'Error fetching doctors', details: err.message });
+    console.error("Shuffle Error:", err);
+    res.status(500).json({ error: 'Error fetching doctors' });
   }
 });
-
 // Get paginated clinics (20 per page)
 app.get("/clinics", async (req, res) => {
   try {
