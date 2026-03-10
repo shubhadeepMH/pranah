@@ -332,55 +332,61 @@ app.post("/logIn", async (req, res) => {
 })
 //Get All doctors API
 app.get("/get_doctors", async (req, res) => {
-
   try {
-
     const page = parseInt(req.query.page) || 1;
-
     const limit = 20;
-
     const skip = (page - 1) * limit;
+    
+    // 1. Get seed and ensure it's a number (default to a prime for better shuffling)
+    const seed = parseInt(req.query.seed) || 12347;
 
-
-
-    // Fetch next 20 doctors
-
-    const doctors = await doctorSchema.find({})
-
-      .skip(skip)
-
-      .limit(limit);
-
-
+    const doctors = await doctorSchema.aggregate([
+      {
+        $addFields: {
+          // 2. STABLE SHUFFLE MATH:
+          // We take the _id, convert to string, and extract only the DIGITS.
+          // Then multiply by the seed (this is what actually shuffles the order).
+          randomSortKey: {
+            $mod: [
+              { 
+                $multiply: [
+                  { 
+                    $convert: { 
+                      // Grab characters and use a fallback for any hex 'a-f'
+                      input: { $substr: [{ $toString: "$_id" }, 0, 8] }, 
+                      to: "long", 
+                      onError: 12345 // Fallback value if hex conversion fails
+                    } 
+                  },
+                  seed // Multiplying creates the "shuffle"
+                ]
+              },
+              1000000 // A large range for the random positions
+            ]
+          }
+        }
+      },
+      // 3. Sort by our scrambled key
+      { $sort: { randomSortKey: 1, _id: 1 } },
+      { $skip: skip },
+      { $limit: limit }
+    ]);
 
     const total = await doctorSchema.countDocuments();
 
-
-
     res.json({
-
-      message: `Fetched ${doctors.length} doctors`,
-
+      success: true,
       totalDoctors: total,
-
       currentPage: page,
-
-      hasMore: skip + doctors.length < total,
-
+      seed: seed,
+      hasMore: (skip + doctors.length) < total,
       data: doctors
-
     });
 
-
-
   } catch (err) {
-
-    console.error(err);
-
-    res.status(500).json({ error: 'Error fetching doctors' });
-
+    console.error("API Error:", err);
+    res.status(500).json({ error: 'Error fetching doctors', details: err.message });
   }
-
 });
 
 // Get paginated clinics (20 per page)
