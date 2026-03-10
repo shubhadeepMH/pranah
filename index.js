@@ -104,8 +104,8 @@ app.put('/doctor_profile_update', async (req, res) => {
     if (image !== undefined) updateData.image = image;
     if (imageDeleteUrl !== undefined) updateData.imageDeleteUrl = imageDeleteUrl;
     if (showContact !== undefined) updateData.showContact = showContact;
-    if(fees!==undefined) updateData.fees = fees;
-    
+    if (fees !== undefined) updateData.fees = fees;
+
 
     const doctor = await doctorSchema.findByIdAndUpdate(
       doctorId,
@@ -292,10 +292,10 @@ app.post('/add_doctor', async (req, res) => {
 app.post('/add_clinic', async (req, res) => {
 
   try {
-    const { name, title, mobile, email, addressLine, city, state, pinCode, addedBy, ownerEmail, description,clinicType } = req.body
+    const { name, title, mobile, email, addressLine, city, state, pinCode, addedBy, ownerEmail, description, clinicType } = req.body
 
     const clinic = await clinicSchema.create({
-      name, title, mobile, email, addressLine, city, state, pinCode, addedBy, ownerEmail, description,clinicType
+      name, title, mobile, email, addressLine, city, state, pinCode, addedBy, ownerEmail, description, clinicType
     })
     res.status(201).json({ message: "Clinic Added Successfully", clinic });
   } catch (error) {
@@ -332,44 +332,55 @@ app.post("/logIn", async (req, res) => {
 })
 //Get All doctors API
 app.get("/get_doctors", async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = 20;
-    const skip = (page - 1) * limit;
-    
-    // 1. Get the seed from the query (e.g., ?page=1&seed=12345)
-    // If no seed is provided, we default to 1 so the order is at least stable
-    const seed = parseFloat(req.query.seed) || 1;
 
-    // 2. Use an aggregation pipeline to create a deterministic random order
-    const doctors = await doctorSchema.aggregate([
-      {
-        $addFields: {
-          // This creates a pseudo-random value for each doc based on its ID + your seed
-          // It ensures the "shuffle" is the same every time this specific seed is used
-          randomOrder: { $mod: [{ $toLong: "$_id" }, seed] } 
-        }
-      },
-      { $sort: { randomOrder: 1, _id: 1 } }, // Sort by our new field
-      { $skip: skip },
-      { $limit: limit }
-    ]);
+  try {
+
+    const page = parseInt(req.query.page) || 1;
+
+    const limit = 20;
+
+    const skip = (page - 1) * limit;
+
+
+
+    // Fetch next 20 doctors
+
+    const doctors = await doctorSchema.find({})
+
+      .skip(skip)
+
+      .limit(limit);
+
+
 
     const total = await doctorSchema.countDocuments();
 
+
+
     res.json({
+
       message: `Fetched ${doctors.length} doctors`,
+
       totalDoctors: total,
+
       currentPage: page,
-      seed: seed, // Send it back so the frontend knows which seed it's using
+
       hasMore: skip + doctors.length < total,
+
       data: doctors
+
     });
 
+
+
   } catch (err) {
+
     console.error(err);
+
     res.status(500).json({ error: 'Error fetching doctors' });
+
   }
+
 });
 
 // Get paginated clinics (20 per page)
@@ -594,7 +605,7 @@ app.delete("/delete_clinic/:clinicId", async (req, res) => {
 
 })
 
-    //  Adding addresses for doctor
+//  Adding addresses for doctor
 app.post("/add_address", async (req, res) => {
   try {
 
@@ -615,7 +626,7 @@ app.post("/add_address", async (req, res) => {
   }
 
 })
-  // Find Addresses by DoctorId
+// Find Addresses by DoctorId
 app.get('/addresses/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -1400,7 +1411,7 @@ app.get("/get_contributor/:ownerEmail", async (req, res) => {
   }
 });
 
-  // API for update user image
+// API for update user image
 app.post("/update_user_image", async (req, res) => {
   try {
     const { userId, imageUrl, imageDeleteUrl } = req.body;
@@ -1457,7 +1468,7 @@ app.patch("/update_user_credit", async (req, res) => {
 });
 
 
-  // Update Doctor Address(When user update)
+// Update Doctor Address(When user update)
 app.put("/doctor_address_update", async (req, res) => {
   try {
     const {
@@ -1494,7 +1505,7 @@ app.put("/doctor_address_update", async (req, res) => {
 
     // ✅ Find & Update (or create)
     const address = await addressesSchema.findOneAndUpdate(
-      { doctorId}, // 🔒 doctor 
+      { doctorId }, // 🔒 doctor 
       { $set: updateData },
       {
         new: true,
