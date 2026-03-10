@@ -379,24 +379,41 @@ app.get("/get_doctors", async (req, res) => {
 // Get paginated clinics (20 per page)
 app.get("/clinics", async (req, res) => {
   try {
-    let page = parseInt(req.query.page) || 1;
-    let limit = 20;
-    let skip = (page - 1) * limit;
+    const page = parseInt(req.query.page) || 1;
+    const limit = 20;
+    const skip = (page - 1) * limit;
+
+    // 1. We NEED the seed to keep the random order consistent while paging
+    // If the frontend doesn't send one, we fall back to a default
+    const seed = req.query.seed || "clinic_session_1";
+
+    const clinics = await clinicSchema.aggregate([
+      {
+        $addFields: {
+          // 2. This creates the "Social Media" shuffle
+          // It combines the Clinic ID + your Seed to create a unique random position
+          randomSortKey: { 
+            $toHashedIndexKey: { 
+              $concat: [ { $toString: "$_id" }, "_", seed.toString() ] 
+            } 
+          }
+        }
+      },
+      // 3. Sort by the random hash we just made
+      { $sort: { randomSortKey: 1 } }, 
+      { $skip: skip },
+      { $limit: limit }
+    ]);
 
     const totalClinics = await clinicSchema.countDocuments();
-
-    const clinics = await clinicSchema
-      .find()
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 }); // latest first
 
     res.json({
       success: true,
       message: `Fetched ${clinics.length} clinics`,
-      page,
       totalClinics,
-      hasMore: skip + clinics.length < totalClinics,
+      currentPage: page,
+      seed: seed, // Send it back so you can debug easily
+      hasMore: (skip + clinics.length) < totalClinics,
       data: clinics
     });
   } catch (err) {
