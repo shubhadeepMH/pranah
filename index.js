@@ -9,6 +9,17 @@ const addressesSchema = require('./Database/Models/doctorAddresses.js')
 const clinicDoctorSchema = require('./Database/Models/ClinicDoctors.js')
 const doctorCommentsSchema = require('./Database/Models/doctorComments.js')
 const clinicCommentsSchema = require('./Database/Models/clinicComments.js');
+const cacheManager = require('./utils/cacheManager.js');
+
+// Deterministic hash function for seed-based shuffling
+function getDeterministicHash(id, seed) {
+  const str = id.toString() + "_" + seed.toString();
+  let hash = 5381;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 33) ^ str.charCodeAt(i);
+  }
+  return hash >>> 0;
+}
 
 // const doctorAddresses = require('./Database/Models/doctorAddresses.js');
 
@@ -23,7 +34,13 @@ app.use(express.json());
 
 
 
-mongoose.connect('mongodb+srv://e-sellers:2JSIH4wypnypujbD@cluster0.udmk0hg.mongodb.net/Pranah', { useUnifiedTopology: true });
+mongoose.connect('mongodb+srv://e-sellers:2JSIH4wypnypujbD@cluster0.udmk0hg.mongodb.net/Pranah', { useUnifiedTopology: true })
+  .then(() => {
+    cacheManager.initializeCache();
+  })
+  .catch(err => {
+    console.error("Database connection error:", err);
+  });
 
 // Doctor SignUp
 app.post('/doctor_signUp', async (req, res) => {
@@ -55,6 +72,7 @@ app.post('/doctor_signUp', async (req, res) => {
     // Create new doctor
     const doctor = new doctorSchema({ name, mobile, email, password });
     await doctor.save();
+    await cacheManager.incrementVersion();
 
     res.json({ message: 'Doctor signed up successfully', success: true });
   } catch (err) {
@@ -128,6 +146,8 @@ app.put('/doctor_profile_update', async (req, res) => {
       );
     }
 
+    await cacheManager.incrementVersion();
+
     res.status(200).json({
       message: "Profile updated successfully",
       doctor
@@ -176,6 +196,7 @@ app.post('/clinic_signUp', async (req, res) => {
     }
     clinic = new clinicSchema({ name, email, password });
     await clinic.save();
+    await cacheManager.incrementVersion();
     res.json({ message: 'Clinic signed up successfully', success: true });
   } catch (err) {
 
@@ -246,6 +267,8 @@ app.put('/clinic_update_profile', async (req, res) => {
     // 🧠 Step 3: Return updated clinic profile
     const updatedClinic = await clinicSchema.findById(clinicId);
 
+    await cacheManager.incrementVersion();
+
     res.json({ message: 'Profile updated successfully', clinic: updatedClinic });
   } catch (err) {
 
@@ -277,6 +300,7 @@ app.post('/add_doctor', async (req, res) => {
 
     });
 
+    await cacheManager.incrementVersion();
     res.status(201).json({ message: "Doctor Added Successfully", doctor });
 
 
@@ -297,6 +321,7 @@ app.post('/add_clinic', async (req, res) => {
     const clinic = await clinicSchema.create({
       name, title, mobile, email, addressLine, city, state, pinCode, addedBy, ownerEmail, description, clinicType
     })
+    await cacheManager.incrementVersion();
     res.status(201).json({ message: "Clinic Added Successfully", clinic });
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
@@ -340,35 +365,25 @@ app.get("/get_doctors", async (req, res) => {
     // Get seed from frontend (e.g., 123456)
     const seed = req.query.seed || "default_seed";
 
-    const doctors = await doctorSchema.aggregate([
-      {
-        $addFields: {
-          // 🚀 THE MAGIC: 
-          // We combine the Doctor's ID and your Seed into one string.
-          // Then we HASH it. This creates a totally random number for every doctor.
-          // Even a 1-digit change in seed will completely re-shuffle the list.
-          randomSortKey: { 
-            $toHashedIndexKey: { 
-              $concat: [ { $toString: "$_id" }, "_", seed.toString() ] 
-            } 
-          }
-        }
-      },
-      // Sort by the hash (this is what gives the "Social Media" feel)
-      { $sort: { randomSortKey: 1 } }, 
-      { $skip: skip },
-      { $limit: limit }
-    ]);
+    const cached = await cacheManager.checkAndSync();
+    
+    // Shuffle deterministically based on seed
+    const sortedDoctors = [...cached.doctors].sort((a, b) => {
+      const hashA = getDeterministicHash(a._id, seed);
+      const hashB = getDeterministicHash(b._id, seed);
+      return hashA - hashB;
+    });
 
-    const total = await doctorSchema.countDocuments();
+    const paginatedDoctors = sortedDoctors.slice(skip, skip + limit);
+    const total = cached.doctors.length;
 
     res.json({
       success: true,
       totalDoctors: total,
       currentPage: page,
       seed: seed,
-      hasMore: (skip + doctors.length) < total,
-      data: doctors
+      hasMore: (skip + paginatedDoctors.length) < total,
+      data: paginatedDoctors
     });
 
   } catch (err) {
@@ -387,34 +402,26 @@ app.get("/clinics", async (req, res) => {
     // If the frontend doesn't send one, we fall back to a default
     const seed = req.query.seed || "clinic_session_1";
 
-    const clinics = await clinicSchema.aggregate([
-      {
-        $addFields: {
-          // 2. This creates the "Social Media" shuffle
-          // It combines the Clinic ID + your Seed to create a unique random position
-          randomSortKey: { 
-            $toHashedIndexKey: { 
-              $concat: [ { $toString: "$_id" }, "_", seed.toString() ] 
-            } 
-          }
-        }
-      },
-      // 3. Sort by the random hash we just made
-      { $sort: { randomSortKey: 1 } }, 
-      { $skip: skip },
-      { $limit: limit }
-    ]);
+    const cached = await cacheManager.checkAndSync();
+    
+    // Shuffle deterministically based on seed
+    const sortedClinics = [...cached.clinics].sort((a, b) => {
+      const hashA = getDeterministicHash(a._id, seed);
+      const hashB = getDeterministicHash(b._id, seed);
+      return hashA - hashB;
+    });
 
-    const totalClinics = await clinicSchema.countDocuments();
+    const paginatedClinics = sortedClinics.slice(skip, skip + limit);
+    const totalClinics = cached.clinics.length;
 
     res.json({
       success: true,
-      message: `Fetched ${clinics.length} clinics`,
+      message: `Fetched ${paginatedClinics.length} clinics`,
       totalClinics,
       currentPage: page,
       seed: seed, // Send it back so you can debug easily
-      hasMore: (skip + clinics.length) < totalClinics,
-      data: clinics
+      hasMore: (skip + paginatedClinics.length) < totalClinics,
+      data: paginatedClinics
     });
   } catch (err) {
     console.error("Error fetching clinics:", err);
@@ -434,8 +441,8 @@ app.post("/find_doctor", async (req, res) => {
       return res.status(400).json({ message: "userId is required", success: false });
     }
 
-    // ✅ Find doctor by _id instead of email
-    const doctorDetails = await doctorSchema.findById(doctorId);
+    const cached = await cacheManager.checkAndSync();
+    const doctorDetails = cached.doctors.find(doc => doc._id.toString() === doctorId.toString());
 
     if (!doctorDetails) {
       return res.status(404).json({ message: "Doctor not found", success: false });
@@ -453,7 +460,8 @@ app.post("/find_clinic", async (req, res) => {
 
   try {
     let clinicId = req.body.clinicId
-    let clinicDetails = await clinicSchema.findById(clinicId);
+    const cached = await cacheManager.checkAndSync();
+    const clinicDetails = cached.clinics.find(cli => cli._id.toString() === clinicId.toString());
 
     if (!clinicDetails) {
       res.send({ message: "Clinic not found", success: false })
@@ -463,7 +471,7 @@ app.post("/find_clinic", async (req, res) => {
 
 
   } catch (error) {
-    res.return({ message: error })
+    res.status(500).json({ message: error.message, success: false });
   }
 
 })
@@ -534,15 +542,16 @@ app.get('/user_added_doctors/:email', async (req, res) => {
   try {
 
     let { email } = req.params
-    let doctors = await doctorSchema.find({ ownerEmail: email })
-    if (!doctors) {
+    const cached = await cacheManager.checkAndSync();
+    const doctors = cached.doctors.filter(doc => doc.ownerEmail === email);
+    if (doctors.length === 0) {
       res.json({ message: "No Doctor Found" })
     } else {
       res.json({ doctors: doctors })
     }
 
   } catch (error) {
-    res.json({ error: error })
+    res.json({ error: error.message })
 
   }
 
@@ -558,15 +567,16 @@ app.get('/user_added_clinics/:email', async (req, res) => {
   try {
 
     let { email } = req.params
-    let doctors = await clinicSchema.find({ ownerEmail: email })
-    if (!doctors) {
+    const cached = await cacheManager.checkAndSync();
+    const clinics = cached.clinics.filter(cli => cli.ownerEmail === email);
+    if (clinics.length === 0) {
       res.json({ message: "No Doctor Found" })
     } else {
-      res.json({ doctors: doctors })
+      res.json({ doctors: clinics })
     }
 
   } catch (error) {
-    res.json({ error: error })
+    res.json({ error: error.message })
 
   }
 
@@ -585,6 +595,7 @@ app.delete("/delete_doctor/:doctorId", async (req, res) => {
       return res.status(404).json({ error: "Doctor not found" });
     }
 
+    await cacheManager.incrementVersion();
     res.status(200).json({ message: "Doctor deleted successfully", success: true });
   } catch (error) {
     console.error("Error deleting Doctor:", error);
@@ -606,6 +617,7 @@ app.delete("/delete_clinic/:clinicId", async (req, res) => {
       return res.status(404).json({ error: "Clinic not found" });
     }
 
+    await cacheManager.incrementVersion();
     res.status(200).json({ message: "Clinic deleted successfully", success: true });
   } catch (error) {
     console.error("Error deleting Doctor:", error);
@@ -625,6 +637,7 @@ app.post("/add_address", async (req, res) => {
 
     // Insert all addresses into the collection
     const result = await addressesSchema.insertMany(newAddresses);
+    await cacheManager.incrementVersion();
 
     res.status(201).json({ message: "Addresses added successfully", data: result });
 
@@ -641,10 +654,8 @@ app.get('/addresses/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const addresses = await addressesSchema.find(
-      { doctorId: id },
-
-    );
+    const cached = await cacheManager.checkAndSync();
+    const addresses = cached.addresses.filter(addr => addr.doctorId === id);
 
     if (!addresses || addresses.length === 0) {
       return res.status(404).json({ error: "No Addresses found with this DoctorId" });
@@ -669,6 +680,7 @@ app.delete('/delete_address/:addressId', async (req, res) => {
       return res.status(404).json({ error: "Address not found" });
     }
 
+    await cacheManager.incrementVersion();
     res.status(200).json({ message: "Address deleted successfully", success: true });
   } catch (error) {
     console.error("Error deleting address:", error);
@@ -699,6 +711,7 @@ app.delete('/delete_user_added_doctor_address', async (req, res) => {
       });
     }
 
+    await cacheManager.incrementVersion();
     res.status(200).json({
       success: true,
       message: "Doctor address(es) deleted successfully",
@@ -723,6 +736,7 @@ app.post('/add_clinicDoctor', async (req, res) => {
 
     // Insert all doctors into the collection
     const result = await clinicDoctorSchema.insertMany(doctors);
+    await cacheManager.incrementVersion();
     res.status(201).json({ message: "Doctors  successfully added", data: result });
 
   } catch (error) {
@@ -736,10 +750,8 @@ app.get('/get_clinicDoctors/:email', async (req, res) => {
   const { email } = req.params;
   try {
 
-    // Insert all doctors into the collection
-    const doctors = await clinicDoctorSchema.find(
-      { clinicEmail: email },
-    );
+    const cached = await cacheManager.checkAndSync();
+    const doctors = cached.clinicDoctors.filter(doc => doc.clinicEmail === email);
 
     if (!doctors || doctors.length === 0) {
       return res.status(404).json({ error: "No doctor found with that email" });
@@ -748,7 +760,7 @@ app.get('/get_clinicDoctors/:email', async (req, res) => {
     res.status(200).json({ doctors });
 
   } catch (error) {
-    res.send(error)
+    res.status(500).json({ error: error.message });
   }
 
 
@@ -765,6 +777,7 @@ app.delete('/delete_clinicDoctor/:doctorId', async (req, res) => {
       return res.status(404).json({ error: "Doctor not found" });
     }
 
+    await cacheManager.incrementVersion();
     res.status(200).json({ message: "Doctor deleted successfully", success: true });
   } catch (error) {
     console.error("Error deleting address:", error);
@@ -912,6 +925,7 @@ app.post("/rate_doctor", async (req, res) => {
     doctor.avgRating = Number((total / doctor.totalRatings).toFixed(1));
 
     await doctor.save();
+    await cacheManager.incrementVersion();
 
     res.status(200).json({
       success: true,
@@ -1071,6 +1085,7 @@ app.post("/rate_clinic", async (req, res) => {
     clinic.avgRating = Number((total / clinic.totalRatings).toFixed(1));
 
     await clinic.save();
+    await cacheManager.incrementVersion();
 
     res.status(200).json({
       success: true,
@@ -1103,93 +1118,75 @@ app.get("/search_doctor", async (req, res) => {
       limit = 10,
     } = req.query;
 
-    let doctorIdsFromAddress = null;
+    const cached = await cacheManager.checkAndSync();
+    let filteredDoctors = cached.doctors;
 
-    // STEP 1️⃣: Handle address-based filtering
+    // STEP 1️⃣: Filter doctors by address if location or pinCode is provided
     if (location || pinCode) {
-      const addressQuery = {};
+      const lowerLoc = location ? location.toLowerCase() : "";
+      const matchingAddresses = cached.addresses.filter(addr => {
+        const matchesLoc = !location || 
+          (addr.addressLine && addr.addressLine.toLowerCase().includes(lowerLoc)) ||
+          (addr.city && addr.city.toLowerCase().includes(lowerLoc)) ||
+          (addr.state && addr.state.toLowerCase().includes(lowerLoc));
+        
+        const matchesPin = !pinCode || addr.pinCode === parseInt(pinCode);
+        return matchesLoc && matchesPin;
+      });
 
-      // Flexible matching in addressLine, city, state
-      if (location) {
-        addressQuery.$or = [
-          { addressLine: { $regex: location, $options: "i" } },
-          { city: { $regex: location, $options: "i" } },
-          { state: { $regex: location, $options: "i" } },
-        ];
+      const doctorIdsFromAddress = new Set(matchingAddresses.map(addr => addr.doctorId ? addr.doctorId.toString() : ""));
+      filteredDoctors = filteredDoctors.filter(doc => doctorIdsFromAddress.has(doc._id.toString()));
+    }
+
+    // STEP 2️⃣: Filter doctors based on other query parameters
+    filteredDoctors = filteredDoctors.filter(doc => {
+      // Must be doctor type
+      if (doc.userType !== "Doctor") return false;
+
+      // query matching
+      if (query) {
+        const lowerQuery = query.toLowerCase();
+        const matchesQuery = 
+          (doc.name && doc.name.toLowerCase().includes(lowerQuery)) ||
+          (doc.specialization && doc.specialization.toLowerCase().includes(lowerQuery)) ||
+          (doc.education && doc.education.toLowerCase().includes(lowerQuery)) ||
+          (doc.description && doc.description.toLowerCase().includes(lowerQuery));
+        if (!matchesQuery) return false;
       }
 
-      if (pinCode) {
-        addressQuery.pinCode = parseInt(pinCode);
+      // specialization matching
+      if (specialization) {
+        const lowerSpec = specialization.toLowerCase();
+        if (!doc.specialization || !doc.specialization.toLowerCase().includes(lowerSpec)) return false;
       }
 
-      const doctorAddresses = await addressesSchema.find(addressQuery, "doctorId");
-      doctorIdsFromAddress = doctorAddresses.map((addr) => addr.doctorId);
-    }
+      // education matching
+      if (education) {
+        const lowerEd = education.toLowerCase();
+        if (!doc.education || !doc.education.toLowerCase().includes(lowerEd)) return false;
+      }
 
-    // STEP 2️⃣: Build Doctor Query
-    const doctorQuery = {
-      userType: "Doctor",
-      $and: [],
-    };
+      // description matching (when description given and no main query)
+      if (description && !query) {
+        const lowerDesc = description.toLowerCase();
+        if (!doc.description || !doc.description.toLowerCase().includes(lowerDesc)) return false;
+      }
 
-    // Search by name / specialization / education / description
-    if (query) {
-      doctorQuery.$and.push({
-        $or: [
-          { name: { $regex: query, $options: "i" } },
-          { specialization: { $regex: query, $options: "i" } },
-          { education: { $regex: query, $options: "i" } },
-          { description: { $regex: query, $options: "i" } },
-        ],
-      });
-    }
+      // rating filter (only doctors with any ratings)
+      if (rating) {
+        if (!doc.rating || doc.rating.length === 0) return false;
+      }
 
-    // 🔹 If description filter is given separately (and not covered by query)
-    if (description && !query) {
-      doctorQuery.$and.push({
-        description: { $regex: description, $options: "i" },
-      });
-    }
+      return true;
+    });
 
-    if (specialization)
-      doctorQuery.$and.push({
-        specialization: { $regex: specialization, $options: "i" },
-      });
-
-    if (education)
-      doctorQuery.$and.push({
-        education: { $regex: education, $options: "i" },
-      });
-
-
-    // STEP 3️⃣: Apply address-based doctor filtering
-    if (doctorIdsFromAddress && doctorIdsFromAddress.length > 0) {
-      doctorQuery.$and.push({ _id: { $in: doctorIdsFromAddress } });
-    } else if (doctorIdsFromAddress && doctorIdsFromAddress.length === 0) {
-      // No doctors match address filter
-      return res.status(200).json({ success: true, total: 0, results: [] });
-    }
-
-    // STEP 4️⃣: Optional rating filter (example: only doctors with any rating)
-    if (rating) {
-      doctorQuery.$and.push({
-        rating: { $exists: true, $not: { $size: 0 } },
-      });
-    }
-
-    if (doctorQuery.$and.length === 0) delete doctorQuery.$and;
-
-    // STEP 5️⃣: Execute query
-    const doctors = await doctorSchema.find(doctorQuery)
-      .skip(parseInt(skip))
-      .limit(parseInt(limit));
-
-    const total = await doctorSchema.countDocuments(doctorQuery);
+    const total = filteredDoctors.length;
+    const paginatedResults = filteredDoctors.slice(parseInt(skip), parseInt(skip) + parseInt(limit));
 
     res.status(200).json({
       success: true,
       total,
-      results: doctors,
+      results: paginatedResults,
     });
   } catch (err) {
     console.error("Error searching doctors:", err);
@@ -1198,7 +1195,7 @@ app.get("/search_doctor", async (req, res) => {
       message: "Server error while searching doctors",
     });
   }
-})
+});
 
 // Search Clinic API
 
@@ -1212,59 +1209,54 @@ app.get("/search_clinic", async (req, res) => {
       limit = 10,
     } = req.query;
 
-    // STEP 1️⃣: Build Clinic Query
-    const clinicQuery = {
-      userType: "Clinic",  // only clinics
-      $and: [],
-    };
+    const cached = await cacheManager.checkAndSync();
+    let filteredClinics = cached.clinics;
 
-    // 🔹 Search by name or description (query keyword)
-    if (query) {
-      clinicQuery.$and.push({
-        $or: [
-          { name: { $regex: query, $options: "i" } },
-          { description: { $regex: query, $options: "i" } },
-        ],
-      });
-    }
+    filteredClinics = filteredClinics.filter(cli => {
+      // Must be Clinic type
+      if (cli.userType !== "Clinic") return false;
 
-    // 🔹 Filter by address fields
-    if (location || pinCode) {
-      const addressFilter = [];
-
-      if (location) {
-        addressFilter.push(
-          { addressLine: { $regex: location, $options: "i" } },
-          { city: { $regex: location, $options: "i" } },
-          { state: { $regex: location, $options: "i" } }
-        );
+      // query matching
+      if (query) {
+        const lowerQuery = query.toLowerCase();
+        const matchesQuery = 
+          (cli.name && cli.name.toLowerCase().includes(lowerQuery)) ||
+          (cli.description && cli.description.toLowerCase().includes(lowerQuery));
+        if (!matchesQuery) return false;
       }
 
-      if (pinCode) {
-        addressFilter.push({ pinCode: parseInt(pinCode) });
+      // location / pinCode matching
+      if (location || pinCode) {
+        let matchesAddress = false;
+        if (location) {
+          const lowerLoc = location.toLowerCase();
+          if (
+            (cli.addressLine && cli.addressLine.toLowerCase().includes(lowerLoc)) ||
+            (cli.city && cli.city.toLowerCase().includes(lowerLoc)) ||
+            (cli.state && cli.state.toLowerCase().includes(lowerLoc))
+          ) {
+            matchesAddress = true;
+          }
+        }
+        if (pinCode) {
+          if (cli.pinCode === parseInt(pinCode)) {
+            matchesAddress = true;
+          }
+        }
+        if (!matchesAddress) return false;
       }
 
-      if (addressFilter.length > 0) {
-        clinicQuery.$and.push({ $or: addressFilter });
-      }
-    }
+      return true;
+    });
 
-    // Remove empty $and
-    if (clinicQuery.$and.length === 0) delete clinicQuery.$and;
-
-    // STEP 2️⃣: Execute query
-    const clinics = await clinicSchema
-      .find(clinicQuery)
-      .skip(parseInt(skip))
-      .limit(parseInt(limit));
-
-    const total = await clinicSchema.countDocuments(clinicQuery);
+    const total = filteredClinics.length;
+    const paginatedResults = filteredClinics.slice(parseInt(skip), parseInt(skip) + parseInt(limit));
 
     // STEP 3️⃣: Send response
     res.status(200).json({
       success: true,
       total,
-      results: clinics,
+      results: paginatedResults,
     });
 
   } catch (err) {
@@ -1343,6 +1335,7 @@ app.post("/add_doctor_to_clinicDoctors_list", async (req, res) => {
 
     // 💾 Save the updated clinic
     await clinic.save();
+    await cacheManager.incrementVersion();
 
     res.status(200).json({
       success: true,
@@ -1524,6 +1517,8 @@ app.put("/doctor_address_update", async (req, res) => {
       }
     );
 
+    await cacheManager.incrementVersion();
+
     res.status(200).json({
       message: "Doctor address updated successfully",
       address
@@ -1538,6 +1533,24 @@ app.put("/doctor_address_update", async (req, res) => {
 });
 
 
+
+app.get('/data_version', async (req, res) => {
+  try {
+    const data = await cacheManager.checkAndSync();
+    res.json({ success: true, version: data.version });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/static_data', async (req, res) => {
+  try {
+    const data = await cacheManager.checkAndSync();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
