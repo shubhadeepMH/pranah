@@ -6,12 +6,13 @@ const doctorSchema = new mongoose.Schema(
     title: { type: String, trim: true },
     email: { type: String, trim: true },
     mobile: { type: String, trim: true },
+    mobileVerified: { type: Boolean, default: false },
     password: { type: String, trim: true, min: 6, max: 64 },
     userType: { type: String, default: "Doctor" },
-    fees: { type: String,},
+    fees: { type: String, },
     comments: [],
     description: { type: String },
-    experience: { type: String},
+    experience: { type: String },
     education: { type: String },
     specialization: { type: String, default: "General Physician" },
     rating: [{ type: Number }], // all individual ratings
@@ -19,12 +20,13 @@ const doctorSchema = new mongoose.Schema(
     avgRating: { type: Number, default: 0 }, // ✅ precomputed field
     totalRatings: { type: Number, default: 0 }, // ✅ count of ratings
     image: { type: String, trim: true, default: "" },
-    imageDeleteUrl: { type: String},  // Storing the delete url of the image from imgBB to delete the previously uploaded image from the imgBB while updating the image
+    imageDeleteUrl: { type: String },  // Storing the delete url of the image from imgBB to delete the previously uploaded image from the imgBB while updating the image
     showContact: { type: Boolean, default: false },
     addedBy: { type: String, trim: true, default: "Self" },
     ownerEmail: { type: String },
     addedType: { type: String, trim: true, default: "Self" },
-    clinic:{type:String}, //Storing clinic ID for show the clinic details
+    approved: { type: Boolean, default: true }, //If Doctor is added by user, it will be false after admin approve then doctor will show on app
+    clinic: { type: String }, //Storing clinic ID for show the clinic details
     resetCode: String,
   },
   { timestamps: true }

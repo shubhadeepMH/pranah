@@ -20,6 +20,8 @@ let PORT = 5007 || process.env.PORT
 app.use(cors());
 app.use(express.json());
 
+// Choose any secret string; you will paste this into Meta's dashboard
+const VERIFY_TOKEN = "my_whatsApp_secret_verify_token_123";
 
 
 
@@ -336,7 +338,7 @@ app.get("/get_doctors", async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = 20;
     const skip = (page - 1) * limit;
-    
+
     // Get seed from frontend (e.g., 123456)
     const seed = req.query.seed || "default_seed";
 
@@ -347,15 +349,15 @@ app.get("/get_doctors", async (req, res) => {
           // We combine the Doctor's ID and your Seed into one string.
           // Then we HASH it. This creates a totally random number for every doctor.
           // Even a 1-digit change in seed will completely re-shuffle the list.
-          randomSortKey: { 
-            $toHashedIndexKey: { 
-              $concat: [ { $toString: "$_id" }, "_", seed.toString() ] 
-            } 
+          randomSortKey: {
+            $toHashedIndexKey: {
+              $concat: [{ $toString: "$_id" }, "_", seed.toString()]
+            }
           }
         }
       },
       // Sort by the hash (this is what gives the "Social Media" feel)
-      { $sort: { randomSortKey: 1 } }, 
+      { $sort: { randomSortKey: 1 } },
       { $skip: skip },
       { $limit: limit }
     ]);
@@ -392,15 +394,15 @@ app.get("/clinics", async (req, res) => {
         $addFields: {
           // 2. This creates the "Social Media" shuffle
           // It combines the Clinic ID + your Seed to create a unique random position
-          randomSortKey: { 
-            $toHashedIndexKey: { 
-              $concat: [ { $toString: "$_id" }, "_", seed.toString() ] 
-            } 
+          randomSortKey: {
+            $toHashedIndexKey: {
+              $concat: [{ $toString: "$_id" }, "_", seed.toString()]
+            }
           }
         }
       },
       // 3. Sort by the random hash we just made
-      { $sort: { randomSortKey: 1 } }, 
+      { $sort: { randomSortKey: 1 } },
       { $skip: skip },
       { $limit: limit }
     ]);
@@ -1523,6 +1525,28 @@ app.put("/doctor_address_update", async (req, res) => {
         runValidators: true
       }
     );
+    //This API is used to approve the doctor by Admins only (When user add any doctor, it will be false, then admin will approve then doctor will show on app)
+    app.put('/approve_doctor', async (req, res) => {
+      try {
+        const { doctorId } = req.body;
+        const updatedDoctor = await doctorSchema.findByIdAndUpdate(doctorId, { approved: true }, { new: true });
+        res.status(200).json({ message: "Doctor approved successfully", doctor: updatedDoctor });
+      } catch (error) {
+        res.status(500).json({ message: "Internal server error", error: error.message });
+      }
+    })
+    //Veify Phone number of users and add the phone number to the user schema
+    app.put('/add_user_phone', async (req, res) => {
+      try {
+        const { userId, mobile, mobileVerified } = req.body;
+        const updatedUser = await userSchema.findByIdAndUpdate(userId, { mobile, mobileVerified }, { new: true });
+        res.status(200).json({ message: "User phone updated successfully", user: updatedUser });
+      } catch (error) {
+        res.status(500).json({ message: "Internal server error", error: error.message });
+      }
+    })
+
+
 
     res.status(200).json({
       message: "Doctor address updated successfully",
@@ -1536,6 +1560,51 @@ app.put("/doctor_address_update", async (req, res) => {
     });
   }
 });
+
+// 1. GET route for verification handshake
+app.get("/webhook", (req, res) => {
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
+  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+    console.log("Webhook verified successfully!");
+    // Must return HTTP 200 with the exact challenge as plain text
+    return res.status(200).send(challenge);
+  }
+
+  return res.sendStatus(403);
+});
+
+// 2. POST route to receive message events & status updates
+app.post("/webhook", (req, res) => {
+  const body = req.body;
+
+  if (body.object === "whatsapp_business_account") {
+    // Process the entries
+    body.entry?.forEach((entry) => {
+      entry.changes?.forEach((change) => {
+        const value = change.value;
+
+        // Incoming messages
+        if (value.messages) {
+          console.log("Received message:", value.messages);
+        }
+
+        // Delivery/Read receipts
+        if (value.statuses) {
+          console.log("Message status update:", value.statuses);
+        }
+      });
+    });
+
+    // Always respond with 200 immediately to prevent retries/throttling
+    return res.sendStatus(200);
+  }
+
+  return res.sendStatus(404);
+});
+
 
 
 
