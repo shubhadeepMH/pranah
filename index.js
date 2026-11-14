@@ -733,9 +733,17 @@ app.post('/add_clinicDoctor', async (req, res) => {
 
 
 })
-app.get('/get_clinicDoctors/:email', async (req, res) => {
+
+//Only those doctor which is added by a Nursinghome/Hospital
+app.get('/get_clinicDoctors/:email', async (req, res, next) => {
 
   const { email } = req.params;
+
+  // If the parameter is not an email (e.g. it is a clinic ID), forward to the next route handler
+  if (!email.includes('@')) {
+    return next();
+  }
+
   try {
 
     // Insert all doctors into the collection
@@ -750,7 +758,67 @@ app.get('/get_clinicDoctors/:email', async (req, res) => {
     res.status(200).json({ doctors });
 
   } catch (error) {
-    res.send(error)
+    res.status(500).send(error);
+  }
+
+
+})
+
+//Get clinic doctor details (all doctors from clinic's doctors array)
+app.get('/get_clinicDoctors/:id', async (req, res) => {
+
+  const { id } = req.params;
+  try {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: "Invalid clinic ID format" });
+    }
+
+    // 1. Find the clinic by id
+    const clinic = await clinicSchema.findById(id);
+
+    if (!clinic) {
+      return res.status(404).json({ success: false, message: "Clinic not found" });
+    }
+
+    // 2. Check if the clinic has doctors in its doctors array
+    if (!clinic.doctors || clinic.doctors.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "No doctors found for this clinic",
+        doctors: [],
+      });
+    }
+
+    // 3. Filter valid ObjectIds from clinic.doctors
+    const validDoctorIds = clinic.doctors.filter((docId) =>
+      mongoose.Types.ObjectId.isValid(docId)
+    );
+
+    if (validDoctorIds.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "No valid doctor IDs found",
+        doctors: [],
+      });
+    }
+
+    // 4. Fetch the full doctor details from Doctors collection to show them on the app
+    const doctors = await doctorSchema
+      .find({ _id: { $in: validDoctorIds } })
+      .select("-password -resetCode");
+
+    return res.status(200).json({
+      success: true,
+      doctors,
+    });
+
+  } catch (error) {
+    console.error("Error fetching clinic doctors:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
   }
 
 
@@ -1603,6 +1671,106 @@ app.post("/webhook", (req, res) => {
   }
 
   return res.sendStatus(404);
+});
+
+// Increase Doctor Views (Atomic & Scalable for concurrent requests)
+app.post("/doctor_views_increaser", async (req, res) => {
+  try {
+    const { doctorId, id } = req.body;
+    const targetDoctorId = doctorId || id;
+
+    if (!targetDoctorId) {
+      return res.status(400).json({
+        success: false,
+        message: "Doctor ID is required",
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(targetDoctorId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Doctor ID format",
+      });
+    }
+
+    // Atomic increment using MongoDB's $inc operator:
+    // Ensures thread-safety and avoids race conditions under parallel/concurrent traffic.
+    const updatedDoctor = await doctorSchema.findByIdAndUpdate(
+      targetDoctorId,
+      { $inc: { views: 1 } },
+      { new: true, select: "views" }
+    );
+
+    if (!updatedDoctor) {
+      return res.status(404).json({
+        success: false,
+        message: "Doctor not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Doctor views increased successfully",
+      views: updatedDoctor.views,
+    });
+  } catch (error) {
+    console.error("Error increasing doctor views:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+});
+
+// Increase Clinic Views (Atomic & Scalable for concurrent requests)
+app.post("/clinic_views_increaser", async (req, res) => {
+  try {
+    const { clinicId, id } = req.body;
+    const targetClinicId = clinicId || id;
+
+    if (!targetClinicId) {
+      return res.status(400).json({
+        success: false,
+        message: "Clinic ID is required",
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(targetClinicId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Clinic ID format",
+      });
+    }
+
+    // Atomic increment using MongoDB's $inc operator:
+    // Ensures thread-safety and avoids race conditions under parallel/concurrent traffic.
+    const updatedClinic = await clinicSchema.findByIdAndUpdate(
+      targetClinicId,
+      { $inc: { views: 1 } },
+      { new: true, select: "views" }
+    );
+
+    if (!updatedClinic) {
+      return res.status(404).json({
+        success: false,
+        message: "Clinic not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Clinic views increased successfully",
+      views: updatedClinic.views,
+    });
+  } catch (error) {
+    console.error("Error increasing clinic views:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
 });
 
 

@@ -11,7 +11,7 @@ const clinicSchema = new mongoose.Schema({
   state: { type: String },
   pinCode: { type: Number },
   image: { type: String, trim: true, default: "" },
-  imageDeleteUrl: { type: String},  // Storing the delete url of the image from imgBB to delete the previously uploaded image from the imgBB while updating the image
+  imageDeleteUrl: { type: String },  // Storing the delete url of the image from imgBB to delete the previously uploaded image from the imgBB while updating the image
   userType: { type: String, default: "Clinic" },
   addedBy: { type: String, trim: true, default: 'Self' }, //There will be only three options Own, Admin, User
   ownerEmail: { type: String }, // If Clinic Added by any user or Admin its necesssary to track 
@@ -23,6 +23,7 @@ const clinicSchema = new mongoose.Schema({
   avgRating: { type: Number, default: 0 }, // ✅ precomputed field
   totalRatings: { type: Number, default: 0 }, // ✅ count of ratings
   clinicType: { type: String },
+  views: { type: Number, default: 0 },
   resetCode: String,
 }, { timestamps: true });
 

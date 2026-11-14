@@ -27,6 +27,8 @@ const doctorSchema = new mongoose.Schema(
     addedType: { type: String, trim: true, default: "Self" },
     approved: { type: Boolean, default: true }, //If Doctor is added by user, it will be false after admin approve then doctor will show on app
     clinic: { type: String }, //Storing clinic ID for show the clinic details
+    views: { type: Number, default: 0 },
+    homeVisit: { type: Boolean, default: false },
     resetCode: String,
   },
   { timestamps: true }
