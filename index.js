@@ -1723,7 +1723,7 @@ app.post("/doctor_views_increaser", async (req, res) => {
   }
 });
 
-// Increase Clinic Views (Atomic & Scalable for concurrent requests)
+// Increase Clinic Views (Atomic & Scalable for concurrent requests) yes bro
 app.post("/clinic_views_increaser", async (req, res) => {
   try {
     const { clinicId, id } = req.body;
